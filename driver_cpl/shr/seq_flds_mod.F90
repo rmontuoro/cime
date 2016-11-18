@@ -2363,6 +2363,17 @@ module seq_flds_mod
      call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes_from_glc, &
           additional_list = .true.)
 
+     ! Other fields needed for coupling with glc
+
+     name = 'Flgl_qice_avg'
+     longname = 'New glacier ice flux - weighted average across elevation classes'
+     stdname = 'ice_flux_out_of_glacier_avg'
+     units = 'kg m-2 s-1'
+     attname = name
+     ! This field is received from lnd, but doesn't need to be sent to any other component
+     call seq_flds_add(l2x_fluxes, name)
+     call metadata_set(attname, longname, stdname, units)
+
      ! Done glc fields
 
      if (flds_co2a) then
