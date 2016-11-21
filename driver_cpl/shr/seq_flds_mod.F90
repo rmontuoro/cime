@@ -2370,8 +2370,11 @@ module seq_flds_mod
      stdname = 'ice_flux_out_of_glacier_avg'
      units = 'kg m-2 s-1'
      attname = name
-     ! This field is received from lnd, but doesn't need to be sent to any other component
+     ! This field is received from lnd, but doesn't need to be sent to any other
+     ! component. However, even though it isn't sent to glc, we still add it to
+     ! l2x_fluxes_to_glc because it's needed in the l2g remapping.
      call seq_flds_add(l2x_fluxes, name)
+     call seq_flds_add(l2x_fluxes_to_glc, name)
      call metadata_set(attname, longname, stdname, units)
 
      ! Done glc fields
