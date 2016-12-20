@@ -1026,6 +1026,11 @@ class Y_TestACMERunACME(TestCreateTestCommon):
         runacme = os.path.join(SCRIPT_DIR, 'tests', scriptname)
         run_cmd_assert_result(self, runacme, expected_stat=0)
 
+    ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        pass
+
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")
 class R_TestUpdateACMETests(unittest.TestCase):
