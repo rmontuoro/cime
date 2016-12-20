@@ -1016,12 +1016,15 @@ class Y_TestACMERunACME(TestCreateTestCommon):
     ###########################################################################
         if CIME.utils.get_model() != "acme":
             self.skipTest("Skipping run_acme test, ACME feature only")
+        if MACHINE.get_machine_name() != 'edison':
+            self.skipTest("Skipping run_acme test, Currently only available on Edison")
 
     ###########################################################################
     def test_acme_run(self):
     ###########################################################################
-        # Put test here
-        pass
+        scriptname = 'run_acme.A_WCYCL2000.ne4_oQU240.v3.csh'
+        runacme = os.path.join(SCRIPT_DIR, 'tests', scriptname)
+        run_cmd_assert_result(self, runacme, expected_stat=0)
 
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")

@@ -21,7 +21,7 @@ set run_name       = A_WCYCL2000_ne4_oQU240_test
 set job_name       = $run_name
 set compset        = A_WCYCL2000
 set resolution     = ne4_oQU240
-set machine        = titan
+set machine        = edison
 setenv project       acme
 
 ### SOURCE CODE OPTIONS
