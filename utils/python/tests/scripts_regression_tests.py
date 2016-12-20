@@ -1008,6 +1008,22 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
 
 ###############################################################################
+class Y_TestACMERunACME(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping run_acme test, ACME feature only")
+
+    ###########################################################################
+    def test_acme_run(self):
+    ###########################################################################
+        # Put test here
+        pass
+
+###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")
 class R_TestUpdateACMETests(unittest.TestCase):
 ###############################################################################
