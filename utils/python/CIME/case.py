@@ -538,6 +538,28 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
+    def get_ncpl_base_dt(self):
+        ncpl_base_period  = self.get_value('NCPL_BASE_PERIOD')
+        if ncpl_base_period == 'hour':
+            basedt = 3600
+        elif ncpl_base_period == 'day':
+            basedt = 3600 * 24
+        elif ncpl_base_period == 'year':
+            if self.get_value('CALENDAR') == 'NO_LEAP':
+                basedt = 3600 * 24 * 365
+            else:
+                expect(False, "Invalid CALENDAR for NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        elif ncpl_base_period == 'decade':
+            if self.get_value('CALENDAR') == 'NO_LEAP':
+                basedt = 3600 * 24 * 365 * 10
+            else:
+                expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        else:
+            expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        if basedt < 0:
+            expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        return basedt
+
     def get_components(self):
         """
         return dictionary of the form [component_class:component],

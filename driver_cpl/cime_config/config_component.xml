@@ -2849,46 +2849,8 @@
       <value cime_model="acme" compset="^2003">367.0</value>
 
       <value cime_model="cesm" compset="^1850">284.7</value>
-      <value cime_model="cesm" compset="^HIST.+BGC%BPRP">284.7</value>
-      <value cime_model="cesm" compset="^HIST_CAM4%FCHM">0.000001</value>
       <value cime_model="cesm" compset="^2000">367.0</value>
-      <value cime_model="cesm" compset="^1850.+DATM%NYF">379.000</value>
-      <value cime_model="cesm" compset="^1850.+DATM%NYF.*_POP2%ECO">284.7</value>
-      <value cime_model="cesm" compset="^2000.+DATM%NYF">379.000</value>
-      <value cime_model="cesm" compset="^2000.+DATM%IAF">379.000</value>
-      <value cime_model="cesm" compset="^HIST.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^4804.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^RCP2.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^RCP4.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^RCP6.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^RCP8.+DATM">367.0</value>
-      <value cime_model="cesm" compset="^2000.+XATM">379.000</value>
-      <value cime_model="cesm" compset="^HIST.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^5505.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^RCP2.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^RCP4.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^RCP6.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^RCP8.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^2013.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^SDYN.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^AMIP.+CAM">0.000001</value>
-      <value cime_model="cesm" compset="^AR95">368.9</value>
-      <value cime_model="cesm" compset="^AR97">368.9</value>
-      <value cime_model="cesm" compset="^2003">367.0</value>
-
-      <!-- Override values based on CAM (WACCM) chemistry -->
-      <value cime_model="cesm" compset="CAM[456]0%W">0.000001</value>
-      <value cime_model="cesm" compset="CAM[456]0%SVBS">0.000001</value>
-      <value cime_model="cesm" compset="CAM[456]0%TMOZ">0.000001</value>
-      <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
-      <value cime_model="cesm" compset="CAM..%WISOall">284.7</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%WCSC">368.9</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%MOZM">0.000001</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%MMOS">0.000001</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%TMOZ">0.000001</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%SMA3">0.000001</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%SMA7">0.000001</value>
-      <value cime_model="cesm" compset="^2000.+CAM[45]%SSOA">0.000001</value>
+      <value cime_model="cesm" compset="^4804">367.0</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
@@ -2896,7 +2858,7 @@
       introduced to coordinate this value among multiple components.</desc>
   </entry>
 
-  <entry id="CO2_TYPE_COSTANT_VALUE">
+  <entry id="CO2_TYPE_CONSTANT_VALUE">
     <type>real</type>
     <valid_values></valid_values>
     <default_value>284.7</default_value>
