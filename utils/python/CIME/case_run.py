@@ -1,17 +1,17 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import append_status, gzip_existing_file
+from CIME.utils                     import append_status, gzip_existing_file, new_lid
 from CIME.check_lockedfiles         import check_lockedfiles
-from CIME.preview_namelists         import preview_namelists
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
+from CIME.preview_namelists         import create_namelists
 
 import shutil, time, sys, os, glob
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def pre_run_check(case):
+def pre_run_check(case, lid):
 ###############################################################################
 
     # Pre run initialization code..
@@ -21,6 +21,11 @@ def pre_run_check(case):
     mpilib = case.get_value("MPILIB")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
+
+    if case.get_value("TESTCASE") == "PFS":
+        env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
+        shutil.copy(env_mach_pes,"%s.%s"%(env_mach_pes,lid))
+
 
     # check for locked files.
     check_lockedfiles(case.get_value("CASEROOT"))
@@ -32,10 +37,7 @@ def pre_run_check(case):
     logger.debug("build complete is %s " %build_complete)
 
     # load the module environment...
-    env_module = case.get_env("mach_specific")
-    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
-                                 debug=case.get_value("DEBUG"),
-                                 mpilib=case.get_value("MPILIB"))
+    case.load_env()
 
     # set environment variables
     # This is a requirement for yellowstone only
@@ -62,15 +64,17 @@ def pre_run_check(case):
 
     os.makedirs(os.path.join(rundir, "timing", "checkpoints"))
 
-    # run preview namelists
-    preview_namelists(case)
+    # This needs to be done everytime the LID changes in order for log files to be set up correctly
+    # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
+    # variable while the job is in the queue
+    create_namelists(case)
 
     # document process
     append_status("Run started ", caseroot=caseroot,
                   sfile="CaseStatus")
 
     logger.info("-------------------------------------------------------------------------")
-    logger.info(" - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
+    logger.info(" - Prestage required restarts into %s" %(rundir))
     logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
     logger.info(" - Checking for required input datasets in DIN_LOC_ROOT")
     logger.info("-------------------------------------------------------------------------")
@@ -81,7 +85,7 @@ def run_model(case):
 
     # Set OMP_NUM_THREADS
     env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_value("COMP_CLASSES").split(',')))
+    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
@@ -178,19 +182,12 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, cycle, data_assimilation_cycles, lid):
+def do_data_assimilation(da_script, caseroot, cycle, lid):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, cycle, data_assimilation_cycles)
+    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, caseroot, cycle)
     logger.debug("running %s" %da_script)
     run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
-
-###############################################################################
-def new_lid():
-###############################################################################
-    lid = time.strftime("%y%m%d-%H%M%S")
-    os.environ["LID"] = lid
-    return lid
 
 ###############################################################################
 def case_run(case):
@@ -218,7 +215,7 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        pre_run_check(case)
+        pre_run_check(case, lid)
         run_model(case)
         post_run_check(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
@@ -226,7 +223,7 @@ def case_run(case):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, cycle, data_assimilation_cycles, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
 
         save_postrun_provenance(case)
 
