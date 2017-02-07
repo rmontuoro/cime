@@ -214,14 +214,14 @@ IF (HAVE_ACME)
 ENDIF()
 
 MESSAGE("\nAGS: HHEELLPP  what include dirs to add: data, stub, active?
-Executable dependent??")
+Just once or are they executable dependent??")
 
 INCLUDE_DIRECTORIES (${SHR_BINARY_DIR}
                      ${GPTL_BINARY_DIR}
                      ${ESMF_BINARY_DIR}
                      ${SEQ_BINARY_DIR}
                      ${DRIVER_BINARY_DIR}
-                     ${LND_D_BINARY_DIR}
+                     ${LND_S_BINARY_DIR}
                      ${OCN_D_BINARY_DIR}
                      ${ICE_D_BINARY_DIR}
                      ${GLC_S_BINARY_DIR}
@@ -246,7 +246,7 @@ set (NETCDF_LIB ${ACME_NETCDF_DIR}/lib/libnetcdff.a
 message ("\nAGS: these are pio netcdf Libs : ${PIO_LIB} ${NETCDF_LIB}")
 
 TARGET_LINK_LIBRARIES(acme_A.exe  compmod
-                      dlnd docn dice sglc datm drof swav sesp  
+                      slnd docn dice sglc datm drof swav sesp  
                       driver shr seq shrcal gptl esmf mct mpeu shrsys 
                       ${PIO_LIB} ${NETCDF_LIB})
 
