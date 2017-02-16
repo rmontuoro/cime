@@ -724,6 +724,7 @@
       <command name="load">sems-env</command>
       <command name="load">sems-git</command>
       <command name="load">sems-python/2.7.9</command>
+      <command name="load">sems-numpy</command>
       <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
