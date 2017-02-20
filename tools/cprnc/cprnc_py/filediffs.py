@@ -284,7 +284,8 @@ class FileDiffs(object):
             v1 = self._file1.get_vardata(varname, dim_indices)
             v2 = self._file2.get_vardata(varname, dim_indices)
             if (v1.shape == v2.shape):
-                my_vardiffs = VarDiffs(varname, v1, v2)
+                dims = self._file1.get_vardims(varname)
+                my_vardiffs = VarDiffs(varname, v1, v2, dims)
             else:
                 my_vardiffs = VarDiffsDimSizeDiff(varname)
         else:

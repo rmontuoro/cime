@@ -32,7 +32,7 @@ class VarDiffs(object):
     # Constructor and other special methods
     # ------------------------------------------------------------------------
 
-    def __init__(self, varname, var1, var2):
+    def __init__(self, varname, var1, var2, dim_names = None):
         """Create a VarDiffs object.
 
         Arguments:
@@ -47,8 +47,15 @@ class VarDiffs(object):
         # variables consume a lot of memory).
         self._compute_stats(var1, var2)
 
+        self._dim_names = dim_names
+
     def __str__(self):
         mystr = ""
+        if self._dim_names is not None:
+            mystr += "Dimensions: "
+            for idx in range(len(self._dim_names) - 1):
+                mystr += self._dim_names[idx] + ", "
+            mystr += self._dim_names[-1] + "\n"
         mystr += str(self._var1info)
         mystr += str(self._var2info)
         if self.vars_differ():

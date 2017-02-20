@@ -97,6 +97,11 @@ class NetcdfFile(object):
         var = self._get_variable(varname)
         return var.get_data(dim_indices)
 
+    def get_vardims(self, varname):
+        """Get a list strings of dimension names that the variable spans"""
+        var = self._get_variable(varname)
+        return var.get_dimensions()
+
     def is_var_numeric(self, varname):
         """Returns True if the given variable is numeric, False otherwise (e.g.,
         if it is a character variable)."""

@@ -20,8 +20,12 @@ class NetcdfFileNetcdf4(NetcdfFile):
 
     def get_global_attributes(self):
         """Returns a dictionary of global attributes"""
-        
+
         raise NotImplementedError
+
+    def get_dimlist(self):
+        """Returns a list of dimensions in the netcdf file"""
+        return self._file.dimensions.keys()
 
     def get_dimsize(self, dimname):
         """Returns the size of the given dimension.
@@ -40,3 +44,5 @@ class NetcdfFileNetcdf4(NetcdfFile):
 
         return NetcdfVariableNetcdf4(self._file.variables[varname])
 
+    def has_variable(self, varname):
+        return varname in self._file.variables
