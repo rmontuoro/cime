@@ -248,20 +248,26 @@ class FileDiffs(object):
         dimname: dimension name (or None)
         """
 
-        if index is None:
-            var_diffs = self._create_vardiffs(varname)
-            diff_wrapper = _DiffWrapper.no_slicing(var_diffs, varname)
-        else:
-            # For now, assume that we want the same index in file2 as in file1.
-            #
-            # TODO(wjs, 2015-12-31) (optional) allow for different indices,
-            # based on reading the associated coordinate variable and finding
-            # the matching coordinate (e.g., matching time).
-            var_diffs = self._create_vardiffs(varname, {dimname:index})
-            diff_wrapper = _DiffWrapper.dim_sliced(var_diffs, varname,
-                                                   dimname, index, index)
+        try:
+            if index is None:
+                var_diffs = self._create_vardiffs(varname)
+                diff_wrapper = _DiffWrapper.no_slicing(var_diffs, varname)
+            else:
+                # For now, assume that we want the same index in file2 as in file1.
+                #
+                # TODO(wjs, 2015-12-31) (optional) allow for different indices,
+                # based on reading the associated coordinate variable and finding
+                # the matching coordinate (e.g., matching time).
+                var_diffs = self._create_vardiffs(varname, {dimname:index})
+                diff_wrapper = _DiffWrapper.dim_sliced(var_diffs, varname,
+                                                       dimname, index, index)
 
-        results.put(diff_wrapper)
+        except Exception as exc:
+            wrapper = _ExceptionWrapper(varname, exc)
+            print(wrapper)
+            results.put(wrapper)
+        else:
+            results.put(diff_wrapper)
 
     def _create_vardiffs(self, varname, dim_indices={}):
         """Create and return a VarDiffs object.
@@ -292,7 +298,6 @@ class FileDiffs(object):
             my_vardiffs = VarDiffsNonNumeric(varname)
 
         return my_vardiffs
-
 
 class _DiffWrapper(object):
     """This class is used by FileDiffs to wrap instances of VarDiffs objects. It
@@ -359,6 +364,19 @@ class _DiffWrapper(object):
 
         mystr = mystr + "\n" + str(self.var_diffs)
         return mystr
+
+class _ExceptionWrapper(object):
+    """This class is used by FileDiffs to propogate exceptions from the worker threads
+    to the manager thread. It should not be used by outside code."""
+
+    def __init__(self, varname, exception):
+        self._varname = varname
+        self._exception = exception
+
+    def __str__(self):
+        format_str = ('Failed to compute the vardiffs of {}.\n'
+                      + 'The following exception occured:\n{}\n')
+        return format_str.format(self._varname, self._exception)
 
 # ------------------------------------------------------------------------
 # Sort functions
