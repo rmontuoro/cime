@@ -47,6 +47,9 @@ class NetcdfVariableNetcdf4(NetcdfVariable):
         dim_slices should match the dimensionality of this variable
         """
 
-        # FIXME(wjs, 2016-01-05) Will this work on scalar data?
-        vardata = self._var[dim_slices]
+        # To handle scalar data, either use _var.getValue() or _var[...]
+        if dim_slices == []:
+            vardata = self._var[...]
+        else:
+            vardata = self._var[dim_slices]
         return vardata
