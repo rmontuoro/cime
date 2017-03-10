@@ -51,7 +51,7 @@ class VarDiffs(object):
 
     def __str__(self):
         mystr = ""
-        if self._dim_names is not None:
+        if self._dim_names is not None and len(self._dim_names) > 0:
             mystr += "Dimensions: "
             for idx in range(len(self._dim_names) - 1):
                 mystr += self._dim_names[idx] + ", "
@@ -109,10 +109,14 @@ class VarDiffs(object):
         self._dims_differ = self._compute_dims_differ(var1, var2)
         self._diffs = None
         self._sums = None
-        if (self.dims_differ()):
+        has_nan = self._has_nan(var1, var2)
+        if (self.dims_differ() or has_nan):
             self._var1info = VarInfo(var1)
             self._var2info = VarInfo(var2)
-            self._vars_differ = False
+            if (has_nan):
+                self._vars_differ = True
+            else:
+                self._vars_differ = False
             self._masks_differ = False
             self._rmse = float('nan')
             self._normalized_rmse = float('nan')
@@ -189,6 +193,13 @@ class VarDiffs(object):
             else:
                 rdiff_logavg = np.float('nan')
         return rdiff_max, rdiff_maxloc, rdiff_logavg
+
+    def _has_nan(self, var1, var2):
+        for vcheck in (var1, var2):
+            has_nan = np.any(np.isnan(vcheck))
+            if has_nan:
+                return True
+        return False
 
     def _compute_max_loc(self, arr, maintained):
         # Computes the location of the maximum value in the array
