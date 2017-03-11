@@ -28,7 +28,6 @@ from CIME.XML.standard_module_setup import *
 from collections import OrderedDict
 
 import os
-from stat import S_IREAD, S_IRGRP, S_IROTH
 
 TEST_STATUS_FILENAME = "TestStatus"
 
