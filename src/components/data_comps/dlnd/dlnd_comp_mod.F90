@@ -1,16 +1,16 @@
 #ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
+  @PROCESS ALIAS_SIZE(805306368)
 #endif
 module dlnd_comp_mod
 
-! !USES:
-
+  ! !USES:
+  
   use shr_sys_mod
   use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
-                               CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+       CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod     , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel, &
-                               shr_file_setlogunit, shr_file_setloglevel, shr_file_setio, &
-                               shr_file_freeunit
+       shr_file_setlogunit, shr_file_setloglevel, shr_file_setio, &
+       shr_file_freeunit
   use shr_mpi_mod      , only: shr_mpi_bcast
   use mct_mod
   use esmf
@@ -25,22 +25,22 @@ module dlnd_comp_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_flds_mod     , only: seq_flds_l2x_fields, seq_flds_x2l_fields
   use glc_elevclass_mod, only: glc_get_num_elevation_classes, glc_elevclass_as_string
-!
-! !PUBLIC TYPES:
+  !
+  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: dlnd_comp_init
   public :: dlnd_comp_run
   public :: dlnd_comp_final
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   !--- other ---
   character(CS) :: myModelName = 'lnd'   ! user defined model name
@@ -51,8 +51,7 @@ module dlnd_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance
-                                         ! (ie. "_0001" or "")
+  character(len=16) :: inst_suffix       ! char string associated with instance (ie. "_0001" or "")
   character(CL) :: lnd_mode
   character(CL) :: sno_mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -70,73 +69,126 @@ module dlnd_comp_mod
 
   !--- names of fields ---
   integer(IN),parameter :: fld_len = 12       ! max character length of fields in avofld & avifld
-  integer(IN),parameter :: nflds_nosnow = 22
-  ! fields other than snow fields:
-  character(fld_len),parameter  :: avofld_nosnow(1:nflds_nosnow) = &
-     (/ "Sl_t        ","Sl_tref     ","Sl_qref     ","Sl_avsdr    ","Sl_anidr    ", &
-        "Sl_avsdf    ","Sl_anidf    ","Sl_snowh    ","Fall_taux   ","Fall_tauy   ", &
-        "Fall_lat    ","Fall_sen    ","Fall_lwup   ","Fall_evap   ","Fall_swnet  ", &
-        "Sl_landfrac ","Sl_fv       ","Sl_ram1     ",                               &
-        "Fall_flxdst1","Fall_flxdst2","Fall_flxdst3","Fall_flxdst4"                 /)
-  character(fld_len),parameter  :: avifld_nosnow(1:nflds_nosnow) = &
-     (/ "t           ","tref        ","qref        ","avsdr       ","anidr       ", &
-        "avsdf       ","anidf       ","snowh       ","taux        ","tauy        ", &
-        "lat         ","sen         ","lwup        ","evap        ","swnet       ", &
-        "lfrac       ","fv          ","ram1        ",                               &
-        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     "                 /)
-
-  integer(IN), parameter :: nflds_snow = 3   ! number of snow fields in each elevation class
-  integer(IN), parameter :: nec_len    = 2   ! length of elevation class index in field names
-  ! for these snow fields, the actual field names will have the elevation class index at
-  ! the end (e.g., Sl_tsrf01, tsrf01)
-  character(fld_len-nec_len),parameter :: avofld_snow(nflds_snow) = &
-       (/"Sl_tsrf  ", "Sl_topo  ", "Flgl_qice"/)
-  character(fld_len-nec_len),parameter :: avifld_snow(nflds_snow) = &
-       (/"tsrf", "topo", "qice"/)
 
   ! all fields:
-  character(fld_len),dimension(:),allocatable :: avofld
-  character(fld_len),dimension(:),allocatable :: avifld
+  character(fld_len), allocatable :: avofld(:)
+  character(fld_len), allocatable :: avifld(:)
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dlnd_comp_init
-!
-! !DESCRIPTION:
-!     initialize data lnd model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  subroutine avfld_set(count_only)
+    logical, intent(in) :: count_only
 
-subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
+    !--- local variables ---
+    integer(IN)                     :: index        ! temporary
+    integer(IN)                     :: n,k          ! generic counters
+    integer(IN)                     :: field_num    ! field number
+    integer(IN)                     :: glc_nec      ! number of elevation classes
+    character(fld_len), allocatable :: avofld_nosnow(:)
+    character(fld_len), allocatable :: avifld_nosnow(:)
+    integer(IN)                     :: nflds_nosnow ! number of fields other than snow fields:
+    character(fld_len), allocatable :: avofld_snow(:)
+    character(fld_len), allocatable :: avifld_snow(:)
+    integer(IN)                     :: nflds_snow   ! number of snow fields in each elevation class
 
-  use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
-  use pio, only : iosystem_desc_t
-  implicit none
+    ! for snow fields, the actual field names will have the elevation class  
+    ! index at the end (e.g., Sl_tsrf01, tsrf01)
+    integer(IN), parameter :: nec_len = 2   ! length of elevation class index in field names
+    character(nec_len)     :: nec_str       ! elevation class, as character string
+    !--------------------------------------------------------------------------------
 
-! !INPUT/OUTPUT PARAMETERS:
+    index = 0
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="t",       driver_fld="Sl_t"         )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="tref",    driver_fld="Sl_tref"      )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="qref",    driver_fld="Sl_qref"      )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="avsdr",   driver_fld="Sl_avsdr"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="anidr",   driver_fld="Sl_anidr"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="avsdf",   driver_fld="Sl_avsdf"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="anidf",   driver_fld="Sl_anidf"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="snowh",   driver_fld="Sl_snowh"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="taux",    driver_fld="Fall_taux"    )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="tauy",    driver_fld="Fall_tauy"    )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="lat",     driver_fld="Fall_lat"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="sen",     driver_fld="Fall_sen"     )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="lwup",    driver_fld="Fall_lwup"    )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="evap",    driver_fld="Fall_evap"    )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="swnet",   driver_fld="Fall_swnet"   )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="lfrac",   driver_fld="Sl_landfrac"  )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="fv",      driver_fld="Sl_fv"        )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="ram1",    driver_fld="Sl_ram1"      )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="flddst1", driver_fld="Fall_flxdst1" )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="flxdst2", driver_fld="Fall_flxdst2" )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="flxdst3", driver_fld="Fall_flxdst3" )
+    call avfld_add(avifld_nosnow, avofld_nosnow, index, count_only, dlnd_fld="flxdst4", driver_fld="Fall_flxdst4" )
+
+    if (count_only) then
+       allocate(avifld_nosnow(index))
+       allocate(avofld_nosnow(index))
+       nflds_nosnow = index
+    end if
+
+    index = 0
+    call avfld_add(avifld_snow, avofld_nosnow, index, count_only, dlnd_fld="tsrf", driver_fld="Sl_tsrf"  )
+    call avfld_add(avifld_snow, avofld_nosnow, index, count_only, dlnd_fld="topo", driver_fld="Sl_topo"  )
+    call avfld_add(avifld_snow, avofld_nosnow, index, count_only, dlnd_fld="qice", driver_fld="Flgl_qice")
+
+    if (count_only) then
+       allocate(avifld_snow(index))
+       allocate(avofld_snow(index))
+       nflds_snow = index
+    end if
+
+    !--------------------------
+    ! Build avofld & avifld
+    !--------------------------
+
+    glc_nec = glc_get_num_elevation_classes()
+
+    ! Start with non-snow fields
+    allocate(avofld(nflds_nosnow + glc_nec*nflds_snow))
+    allocate(avifld(nflds_nosnow + glc_nec*nflds_snow))
+    avofld(1:nflds_nosnow) = avofld_nosnow
+    avifld(1:nflds_nosnow) = avifld_nosnow
+    field_num = nflds_nosnow
+
+    ! Append each snow field
+    do k = 1, nflds_snow
+       do n = 1, glc_nec
+          ! nec_str will be something like '02' or '10'
+          nec_str = glc_elevclass_as_string(n)
+
+          field_num = field_num + 1
+          avofld(field_num) = trim(avofld_snow(k))//nec_str
+          avifld(field_num) = trim(avifld_snow(k))//nec_str
+       end do
+    end do
+
+  end subroutine avfld_set
+
+  !===============================================================================
+  subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
+
+    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
+    use pio, only : iosystem_desc_t
+    implicit none
+
+    ! !DESCRIPTION: initialize data lnd model
+
+    ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock)            , intent(in)    :: EClock
     type(seq_cdata)             , intent(inout) :: cdata_l
     type(mct_aVect)             , intent(inout) :: x2l, l2x
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
-!EOP
-
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: field_num   ! field number
     integer(IN)   :: ierr        ! error code
     integer(IN)   :: COMPID      ! comp id
     integer(IN)   :: gsize       ! global size
     integer(IN)   :: lsize_l     ! local size
-    integer(IN)   :: glc_nec     ! number of elevation classes
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: nunit          ! unit number
     logical       :: lnd_present    ! flag
@@ -155,7 +207,6 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     character(CS) ::  latName    ! domain file: lat  variable name
     character(CS) :: maskName    ! domain file: mask variable name
     character(CS) :: areaName    ! domain file: area variable name
-    character(nec_len):: nec_str ! elevation class, as character string
 
     integer(IN)   :: yearFirst   ! first year to use in data stream
     integer(IN)   :: yearLast    ! last  year to use in data stream
@@ -175,8 +226,8 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
 
     !----- define namelist -----
     namelist / dlnd_nml / &
-        decomp, restfilm, restfils, &
-        force_prognostic_true
+         decomp, restfilm, restfils, &
+         force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
@@ -188,7 +239,7 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     character(*), parameter :: F90   = "('(dlnd_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(dlnd_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dlnd_comp_init) "
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
 
     call t_startf('DLND_INIT')
@@ -227,7 +278,7 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_getData(infodata,single_column=scmMode, &
-   &                          scmlat=scmlat, scmlon=scmLon)
+         &                          scmlat=scmlat, scmlon=scmLon)
 
     lnd_present = .false.
     lnd_prognostic = .false.
@@ -286,40 +337,15 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     ! check that we know how to handle the mode
 
     if (trim(lnd_mode) == 'NULL' .or. &
-        trim(lnd_mode) == 'COPYALL') then
-      if (my_task == master_task) &
-         write(logunit,F00) ' lnd mode = ',trim(lnd_mode)
+         trim(lnd_mode) == 'COPYALL') then
+       if (my_task == master_task) &
+            write(logunit,F00) ' lnd mode = ',trim(lnd_mode)
     else
-      write(logunit,F00) ' ERROR illegal lnd mode = ',trim(lnd_mode)
-      call shr_sys_abort()
+       write(logunit,F00) ' ERROR illegal lnd mode = ',trim(lnd_mode)
+       call shr_sys_abort()
     endif
 
     call t_stopf('dlnd_readnml')
-
-    !----------------------------------------------------------------------------
-    ! Build avofld & avifld
-    !----------------------------------------------------------------------------
-
-    glc_nec = glc_get_num_elevation_classes()
-
-    ! Start with non-snow fields
-    allocate(avofld(nflds_nosnow + glc_nec*nflds_snow))
-    allocate(avifld(nflds_nosnow + glc_nec*nflds_snow))
-    avofld(1:nflds_nosnow) = avofld_nosnow
-    avifld(1:nflds_nosnow) = avifld_nosnow
-    field_num = nflds_nosnow
-
-    ! Append each snow field
-    do k = 1, nflds_snow
-       do n = 1, glc_nec
-          ! nec_str will be something like '02' or '10'
-          nec_str = glc_elevclass_as_string(n)
-
-          field_num = field_num + 1
-          avofld(field_num) = trim(avofld_snow(k))//nec_str
-          avifld(field_num) = trim(avifld_snow(k))//nec_str
-       end do
-    end do
 
     !----------------------------------------------------------------------------
     ! Initialize datasets
@@ -337,13 +363,13 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
        call shr_strdata_pioinit(SDLND,lnd_pio_subsys,lnd_pio_iotype)
        if (scmmode) then
           if (my_task == master_task) &
-             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+               write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
           call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
-                   scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-                   calendar=calendar)
+               scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
+               calendar=calendar)
        else
           call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
-                   calendar=calendar)
+               calendar=calendar)
        endif
     endif
 
@@ -361,112 +387,107 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
          lnd_present=lnd_present, lnd_prognostic=lnd_prognostic, &
          lnd_nx=SDLND%nxg, lnd_ny=SDLND%nyg)
 
-    ! ************ lnd_present ****************
     if (lnd_present) then
-    ! ************ lnd_present ****************
 
-    !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
-    !----------------------------------------------------------------------------
+       !----------------------------------------------------------------------------
+       ! Initialize MCT global seg map, 1d decomp
+       !----------------------------------------------------------------------------
 
-    call t_startf('dlnd_initgsmaps')
-    if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-    call shr_sys_flush(logunit)
-
-    call shr_dmodel_gsmapcreate(gsmap_l,SDLND%nxg*SDLND%nyg,compid,mpicom,decomp)
-    lsize_l = mct_gsmap_lsize(gsmap_l,mpicom)
-
-    if (lnd_present) then
-       call mct_rearr_init(SDLND%gsmap,gsmap_l,mpicom,rearr_l)
-    endif
-
-    call t_stopf('dlnd_initgsmaps')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('dlnd_initmctdom')
-    if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_sys_flush(logunit)
-
-    if (lnd_present) call shr_dmodel_rearrGGrid(SDLND%grid, dom_l, gsmap_l, rearr_l, mpicom)
-
-    call t_stopf('dlnd_initmctdom')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT attribute vectors
-    !----------------------------------------------------------------------------
-
-    call t_startf('dlnd_initmctavs')
-    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-    call shr_sys_flush(logunit)
-
-    call mct_aVect_init(l2x, rList=seq_flds_l2x_fields, lsize=lsize_l)
-    call mct_aVect_zero(l2x)
-
-    call mct_aVect_init(x2l, rList=seq_flds_x2l_fields, lsize=lsize_l)
-    call mct_aVect_zero(x2l)
-
-    call t_stopf('dlnd_initmctavs')
-
-    !----------------------------------------------------------------------------
-    ! Read restart
-    !----------------------------------------------------------------------------
-
-    if (read_restart) then
-       if (trim(rest_file)        == trim(nullstr) .and. &
-           trim(rest_file_strm_l) == trim(nullstr)) then
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer'
-             call shr_sys_flush(logunit)
-             inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
-                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
-             endif
-             nu = shr_file_getUnit()
-             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-             read(nu,'(a)') rest_file
-             read(nu,'(a)') rest_file_strm_l
-             close(nu)
-             call shr_file_freeUnit(nu)
-             inquire(file=trim(rest_file_strm_l),exist=exists_l)
-          endif
-          call shr_mpi_bcast(rest_file,mpicom,'rest_file')
-          call shr_mpi_bcast(rest_file_strm_l,mpicom,'rest_file_strm_l')
-       else
-          ! use namelist already read
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from namelist '
-             call shr_sys_flush(logunit)
-             inquire(file=trim(rest_file_strm_l),exist=exists_l)
-          endif
-       endif
-       call shr_mpi_bcast(exists_l,mpicom,'exists_l')
-       !if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-       !call shr_pcdf_readwrite('read',trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
-       if (exists_l) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm_l)
-          call shr_strdata_restRead(trim(rest_file_strm_l),SDLND,mpicom)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm_l)
-       endif
+       call t_startf('dlnd_initgsmaps')
+       if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
        call shr_sys_flush(logunit)
-    endif
 
-    !----------------------------------------------------------------------------
-    ! Set initial lnd state, needed for CCSM atm initialization
-    !----------------------------------------------------------------------------
+       call shr_dmodel_gsmapcreate(gsmap_l,SDLND%nxg*SDLND%nyg,compid,mpicom,decomp)
+       lsize_l = mct_gsmap_lsize(gsmap_l,mpicom)
 
-    call t_adj_detailf(+2)
-    call dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
-    call t_adj_detailf(-2)
+       if (lnd_present) then
+          call mct_rearr_init(SDLND%gsmap,gsmap_l,mpicom,rearr_l)
+       endif
 
+       call t_stopf('dlnd_initgsmaps')
 
-    ! ************ lnd_present ****************
-    end if
-    ! ************ lnd_present ****************
+       !----------------------------------------------------------------------------
+       ! Initialize MCT domain
+       !----------------------------------------------------------------------------
+
+       call t_startf('dlnd_initmctdom')
+       if (my_task == master_task) write(logunit,F00) 'copy domains'
+       call shr_sys_flush(logunit)
+
+       if (lnd_present) call shr_dmodel_rearrGGrid(SDLND%grid, dom_l, gsmap_l, rearr_l, mpicom)
+
+       call t_stopf('dlnd_initmctdom')
+
+       !----------------------------------------------------------------------------
+       ! Initialize MCT attribute vectors
+       !----------------------------------------------------------------------------
+
+       call t_startf('dlnd_initmctavs')
+       if (my_task == master_task) write(logunit,F00) 'allocate AVs'
+       call shr_sys_flush(logunit)
+
+       call mct_aVect_init(l2x, rList=seq_flds_l2x_fields, lsize=lsize_l)
+       call mct_aVect_zero(l2x)
+
+       call mct_aVect_init(x2l, rList=seq_flds_x2l_fields, lsize=lsize_l)
+       call mct_aVect_zero(x2l)
+
+       call t_stopf('dlnd_initmctavs')
+
+       !----------------------------------------------------------------------------
+       ! Read restart
+       !----------------------------------------------------------------------------
+
+       if (read_restart) then
+          if (trim(rest_file)        == trim(nullstr) .and. &
+               trim(rest_file_strm_l) == trim(nullstr)) then
+             if (my_task == master_task) then
+                write(logunit,F00) ' restart filenames from rpointer'
+                call shr_sys_flush(logunit)
+                inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
+                if (.not.exists) then
+                   write(logunit,F00) ' ERROR: rpointer file does not exist'
+                   call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+                endif
+                nu = shr_file_getUnit()
+                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                read(nu,'(a)') rest_file
+                read(nu,'(a)') rest_file_strm_l
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file_strm_l),exist=exists_l)
+             endif
+             call shr_mpi_bcast(rest_file,mpicom,'rest_file')
+             call shr_mpi_bcast(rest_file_strm_l,mpicom,'rest_file_strm_l')
+          else
+             ! use namelist already read
+             if (my_task == master_task) then
+                write(logunit,F00) ' restart filenames from namelist '
+                call shr_sys_flush(logunit)
+                inquire(file=trim(rest_file_strm_l),exist=exists_l)
+             endif
+          endif
+          call shr_mpi_bcast(exists_l,mpicom,'exists_l')
+          !if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+          !call shr_pcdf_readwrite('read',trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
+          if (exists_l) then
+             if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm_l)
+             call shr_strdata_restRead(trim(rest_file_strm_l),SDLND,mpicom)
+          else
+             if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm_l)
+          endif
+          call shr_sys_flush(logunit)
+       endif
+
+       !----------------------------------------------------------------------------
+       ! Set initial lnd state, needed for CCSM atm initialization
+       !----------------------------------------------------------------------------
+
+       call t_adj_detailf(+2)
+       call dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
+       call t_adj_detailf(-2)
+
+    end if ! if lnd_present
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -481,214 +502,187 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
 
     call t_stopf('DLND_INIT')
 
-end subroutine dlnd_comp_init
+  end subroutine dlnd_comp_init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dlnd_comp_run
-!
-! !DESCRIPTION:
-!     run method for dead lnd model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  subroutine dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
 
-subroutine dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
+    implicit none
 
-   implicit none
+    ! !DESCRIPTION: run method for dlnd model
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(ESMF_Clock)            ,intent(in)    :: EClock
-   type(seq_cdata)             ,intent(inout) :: cdata_l
-   type(mct_aVect)             ,intent(inout) :: x2l
-   type(mct_aVect)             ,intent(inout) :: l2x
+    type(ESMF_Clock) ,intent(in)    :: EClock
+    type(seq_cdata)  ,intent(inout) :: cdata_l
+    type(mct_aVect)  ,intent(inout) :: x2l
+    type(mct_aVect)  ,intent(inout) :: l2x
 
-!EOP
+    !--- local ---
+    type(mct_gsMap) , pointer :: gsMap_l
+    type(mct_gGrid) , pointer :: dom_l
 
-   !--- local ---
-   type(mct_gsMap)        , pointer :: gsMap_l
-   type(mct_gGrid)        , pointer :: dom_l
+    integer(IN)   :: CurrentYMD        ! model date
+    integer(IN)   :: CurrentTOD        ! model sec into model date
+    integer(IN)   :: yy,mm,dd          ! year month day
+    integer(IN)   :: n                 ! indices
+    integer(IN)   :: nf                ! fields loop index
+    integer(IN)   :: nl                ! land frac index
+    integer(IN)   :: kl                ! index of landfrac
+    integer(IN)   :: lsize_l           ! size of attr vect
+    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
+    logical       :: newdata           ! has newdata been read
+    logical       :: mssrmlf           ! remove old data
+    logical       :: write_restart     ! restart now
+    character(CL) :: case_name         ! case name
+    character(CL) :: rest_file         ! restart_file
+    character(CL) :: rest_file_strm_l  ! restart_file for stream
+    integer(IN)   :: nu                ! unit number
+    integer(IN)   :: nflds_x2l
+    type(seq_infodata_type), pointer :: infodata
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! land frac index
-   integer(IN)   :: kl                ! index of landfrac
-   integer(IN)   :: lsize_l           ! size of attr vect
-   integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm_l  ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
-   integer(IN)   :: nflds_x2l
-   type(seq_infodata_type), pointer :: infodata
+    character(*), parameter :: F00   = "('(dlnd_comp_run) ',8a)"
+    character(*), parameter :: F04   = "('(dlnd_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: subName = "(dlnd_comp_run) "
+    !-------------------------------------------------------------------------------
 
-   character(*), parameter :: F00   = "('(dlnd_comp_run) ',8a)"
-   character(*), parameter :: F04   = "('(dlnd_comp_run) ',2a,2i8,'s')"
-   character(*), parameter :: subName = "(dlnd_comp_run) "
-!-------------------------------------------------------------------------------
+    call t_startf('DLND_RUN')
 
-   call t_startf('DLND_RUN')
+    call t_startf('dlnd_run1')
 
-   call t_startf('dlnd_run1')
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to my log file
+    !----------------------------------------------------------------------------
+    call shr_file_getLogUnit (shrlogunit)
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (logUnit)
 
-  !----------------------------------------------------------------------------
-  ! Reset shr logging to my log file
-  !----------------------------------------------------------------------------
-   call shr_file_getLogUnit (shrlogunit)
-   call shr_file_getLogLevel(shrloglev)
-   call shr_file_setLogUnit (logUnit)
+    call seq_cdata_setptrs(cdata_l, gsMap=gsMap_l, dom=dom_l)
 
-   call seq_cdata_setptrs(cdata_l, gsMap=gsMap_l, dom=dom_l)
+    call seq_cdata_setptrs(cdata_l, infodata=infodata)
 
-   call seq_cdata_setptrs(cdata_l, infodata=infodata)
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
-   call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-   call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-   write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    lsize_l = mct_avect_lsize(x2l)
+    nflds_x2l = mct_avect_nRattr(x2l)
 
-   lsize_l = mct_avect_lsize(x2l)
-   nflds_x2l = mct_avect_nRattr(x2l)
+    call t_stopf('dlnd_run1')
 
-   call t_stopf('dlnd_run1')
+    !--------------------
+    ! UNPACK
+    !--------------------
 
-   !--------------------
-   ! UNPACK
-   !--------------------
+    call t_startf('dlnd_unpack')
 
-   call t_startf('dlnd_unpack')
+    !   do nf=1,nflds_x2l
+    !   do n=1,lsize_l
+    !     ?? = x2l%rAttr(nf,n)
+    !   enddo
+    !   enddo
 
-!   do nf=1,nflds_x2l
-!   do n=1,lsize_l
-!     ?? = x2l%rAttr(nf,n)
-!   enddo
-!   enddo
+    !   do nf=1,nflds_x2s
+    !   do n=1,lsize_s
+    !     ?? = x2s%rAttr(nf,n)
+    !   enddo
+    !   enddo
 
-!   do nf=1,nflds_x2s
-!   do n=1,lsize_s
-!     ?? = x2s%rAttr(nf,n)
-!   enddo
-!   enddo
+    call t_stopf('dlnd_unpack')
 
-   call t_stopf('dlnd_unpack')
+    !--------------------
+    ! ADVANCE LAND
+    !--------------------
 
-   !--------------------
-   ! ADVANCE LAND
-   !--------------------
+    call t_barrierf('dlnd_l_BARRIER',mpicom)
+    call t_startf('dlnd_l')
 
-   call t_barrierf('dlnd_l_BARRIER',mpicom)
-   call t_startf('dlnd_l')
+    if (trim(lnd_mode) /= 'NULL') then
+       call t_startf('dlnd_l_strdata_advance')
+       call shr_strdata_advance(SDLND,currentYMD,currentTOD,mpicom,'dlnd_l')
+       call t_stopf('dlnd_l_strdata_advance')
+       call t_barrierf('dlnd_l_scatter_BARRIER',mpicom)
+       call t_startf('dlnd_l_scatter')
+       do n = 1,SDLND%nstreams
+          call shr_dmodel_translateAV(SDLND%avs(n),l2x,avifld,avofld,rearr_l)
+       enddo
+       call t_stopf('dlnd_l_scatter')
+    else
+       call mct_aVect_zero(l2x)
+    endif
 
-   if (trim(lnd_mode) /= 'NULL') then
-      call t_startf('dlnd_l_strdata_advance')
-      call shr_strdata_advance(SDLND,currentYMD,currentTOD,mpicom,'dlnd_l')
-      call t_stopf('dlnd_l_strdata_advance')
-      call t_barrierf('dlnd_l_scatter_BARRIER',mpicom)
-      call t_startf('dlnd_l_scatter')
-      do n = 1,SDLND%nstreams
-         call shr_dmodel_translateAV(SDLND%avs(n),l2x,avifld,avofld,rearr_l)
-      enddo
-      call t_stopf('dlnd_l_scatter')
-   else
-      call mct_aVect_zero(l2x)
-   endif
+    call t_stopf('dlnd_l')
 
-   call t_stopf('dlnd_l')
+    if (write_restart) then
+       call t_startf('dlnd_restart')
+       call seq_infodata_GetData( infodata, case_name=case_name)
+       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dlnd'//trim(inst_suffix)//'.r.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm_l,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dlnd'//trim(inst_suffix)//'.rs1.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm_l
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       !if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+       !call shr_pcdf_readwrite('write',trim(rest_file),mpicom,gsmap,clobber=.true., &
+       !   rf1=somtp,rf1n='somtp')
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm_l),currentYMD,currentTOD
+       call shr_strdata_restWrite(trim(rest_file_strm_l),SDLND,mpicom,trim(case_name),'SDLND strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('dlnd_restart')
+    endif
 
-   if (write_restart) then
-      call t_startf('dlnd_restart')
-      call seq_infodata_GetData( infodata, case_name=case_name)
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dlnd'//trim(inst_suffix)//'.r.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      write(rest_file_strm_l,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dlnd'//trim(inst_suffix)//'.rs1.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
-      if (my_task == master_task) then
-         nu = shr_file_getUnit()
-         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-         write(nu,'(a)') rest_file
-         write(nu,'(a)') rest_file_strm_l
-         close(nu)
-         call shr_file_freeUnit(nu)
-      endif
-      !if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
-      !call shr_pcdf_readwrite('write',trim(rest_file),mpicom,gsmap,clobber=.true., &
-      !   rf1=somtp,rf1n='somtp')
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm_l),currentYMD,currentTOD
-      call shr_strdata_restWrite(trim(rest_file_strm_l),SDLND,mpicom,trim(case_name),'SDLND strdata')
-      call shr_sys_flush(logunit)
-      call t_stopf('dlnd_restart')
-   endif
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
 
-   !----------------------------------------------------------------------------
-   ! Log output for model date
-   ! Reset shr logging to original values
-   !----------------------------------------------------------------------------
+    call t_startf('dlnd_run2')
+    if (my_task == master_task) then
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
+    end if
 
-   call t_startf('dlnd_run2')
-   if (my_task == master_task) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
-   end if
+    call shr_file_setLogUnit (shrlogunit)
+    call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
+    call t_stopf('dlnd_run2')
 
-   call shr_file_setLogUnit (shrlogunit)
-   call shr_file_setLogLevel(shrloglev)
-   call shr_sys_flush(logunit)
-   call t_stopf('dlnd_run2')
+    call t_stopf('DLND_RUN')
 
-   call t_stopf('DLND_RUN')
+  end subroutine dlnd_comp_run
 
-end subroutine dlnd_comp_run
+  !===============================================================================
+  subroutine dlnd_comp_final()
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dlnd_comp_final
-!
-! !DESCRIPTION:
-!     finalize method for dead lnd model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-!
-subroutine dlnd_comp_final()
+    implicit none
 
-   implicit none
+  ! !DESCRIPTION: finalize method for dead lnd model
 
-!EOP
+    !--- formats ---
+    character(*), parameter :: F00   = "('(dlnd_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dlnd_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(dlnd_comp_final) "
+    !-------------------------------------------------------------------------------
 
-   !--- formats ---
-   character(*), parameter :: F00   = "('(dlnd_comp_final) ',8a)"
-   character(*), parameter :: F91   = "('(dlnd_comp_final) ',73('-'))"
-   character(*), parameter :: subName = "(dlnd_comp_final) "
+    call t_startf('DLND_FINAL')
 
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
 
-   call t_startf('DLND_FINAL')
+    call t_stopf('DLND_FINAL')
 
-   if (my_task == master_task) then
-      write(logunit,F91)
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91)
-   end if
-
-   call t_stopf('DLND_FINAL')
-
-end subroutine dlnd_comp_final
-!===============================================================================
-!===============================================================================
-
+  end subroutine dlnd_comp_final
+  !===============================================================================
 
 end module dlnd_comp_mod

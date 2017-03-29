@@ -97,12 +97,12 @@ module shr_strdata_mod
     character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
     integer(IN)                    :: io_type
 
-    !--- data required by cosz t-interp method, set by user ---
-    real(R8)                       :: eccen
-    real(R8)                       :: mvelpp
-    real(R8)                       :: lambm0
-    real(R8)                       :: obliqr
-    integer(IN)                    :: modeldt           ! model dt in seconds
+    !--- data required by cosz t-interp method ---
+    real(R8)                       :: eccen      ! orbital eccentricity                                    
+    real(R8)                       :: mvelpp     ! moving vernal equinox long                              
+    real(R8)                       :: lambm0     ! mean long of perihelion at vernal equinox (radians)     
+    real(R8)                       :: obliqr     ! obliquity in degrees                                    
+    integer(IN)                    :: modeldt    ! data model dt in seconds (set to the coupling frequency)
 
     ! --- internal, public ---
     integer(IN)                    :: nxg               ! model grid lon size
@@ -113,32 +113,32 @@ module shr_strdata_mod
     type(mct_ggrid)                :: grid              ! model grid ggrid
     type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
 
-    ! --- internal ---
-    type(shr_stream_streamType)    :: stream(nStrMax)
+    ! --- internal, stream specific arrays, stream grid ---
+    type(shr_stream_streamType)    :: stream(nStrMax)   ! stream file info
     type(iosystem_desc_t), pointer :: pio_subsystem => null()
     type(io_desc_t)                :: pio_iodesc(nStrMax)
     integer(IN)                    :: nstreams          ! number of streams
-    integer(IN)                    :: strnxg(nStrMax)
-    integer(IN)                    :: strnyg(nStrMax)
-    integer(IN)                    :: strnzg(nStrMax)
-    logical                        :: dofill(nStrMax)
-    logical                        :: domaps(nStrMax)
-    integer(IN)                    :: lsizeR(nStrMax)
-    type(mct_gsmap)                :: gsmapR(nStrMax)
-    type(mct_rearr)                :: rearrR(nStrMax)
-    type(mct_ggrid)                :: gridR(nStrMax)
+    integer(IN)                    :: strnxg(nStrMax)   ! stream grid lon sizes				       
+    integer(IN)                    :: strnyg(nStrMax)   ! stream grid lat sizes				      
+    integer(IN)                    :: strnzg(nStrMax)   ! tream grid global sizes				      
+    logical                        :: dofill(nStrMax)   ! true if stream grid is different from data model grid   
+    logical                        :: domaps(nStrMax)   ! true if stream grid is different from data model grid   
+    integer(IN)                    :: lsizeR(nStrMax)   ! stream local size of gsmapR on processor		      
+    type(mct_gsmap)                :: gsmapR(nStrMax)   ! stream global seg map				      
+    type(mct_rearr)                :: rearrR(nStrMax)   ! rearranger 					      
+    type(mct_ggrid)                :: gridR(nStrMax)    ! local stream grid on processor                          
     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect
     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect
     type(mct_avect)                :: avFUB(nStrMax)    ! Final attrvect
     type(mct_avect)                :: avFLB(nStrMax)    ! Final attrvect
     type(mct_avect)                :: avCoszen(nStrMax) ! data assocaited with coszen time interp
-    type(mct_sMatP)                :: sMatPf(nStrMax)
-    type(mct_sMatP)                :: sMatPs(nStrMax)
-    integer(IN)                    :: ymdLB(nStrMax),todLB(nStrMax)
-    integer(IN)                    :: ymdUB(nStrMax),todUB(nStrMax)
+    type(mct_sMatP)                :: sMatPf(nStrMax)   ! sparse matrix map for fill on stream grid			   
+    type(mct_sMatP)                :: sMatPs(nStrMax)   ! sparse matrix map for mapping from stream to data model grid 
+    integer(IN)                    :: ymdLB(nStrMax),todLB(nStrMax) ! lower bound time for stream
+    integer(IN)                    :: ymdUB(nStrMax),todUB(nStrMax) ! upper bound time for stream
     real(R8)                       :: dtmin(nStrMax)
     real(R8)                       :: dtmax(nStrMax)
-    integer(IN)                    :: ymd  ,tod
+    integer(IN)                    :: ymd  ,tod         ! model time
     character(CL)                  :: calendar          ! model calendar for ymd,tod
     integer(IN)                    :: nvectors          ! number of vectors
     integer(IN)                    :: ustrm (nVecMax)

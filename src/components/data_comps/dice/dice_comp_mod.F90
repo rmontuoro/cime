@@ -1,18 +1,19 @@
 #ifdef AIX
 @PROCESS ALIAS_SIZE(805306368)
 #endif
+
 module dice_comp_mod
 
-! !USES:
+  ! !USES:
 
   use shr_const_mod
-  use shr_frz_mod, only: shr_frz_freezetemp
+  use shr_frz_mod  , only: shr_frz_freezetemp
   use shr_sys_mod
-  use shr_kind_mod , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
-                           CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel, &
-                           shr_file_setlogunit, shr_file_setloglevel, shr_file_setio, &
-                           shr_file_freeunit
+  use shr_kind_mod , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+  use shr_kind_mod , only: CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_file_mod , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
+  use shr_file_mod , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
+  use shr_file_mod , only: shr_file_freeunit
   use shr_mpi_mod  , only: shr_mpi_bcast
   use shr_flux_mod , only: shr_flux_atmIce
   use shr_cal_mod  , only: shr_cal_ymd2julian
@@ -27,26 +28,24 @@ module dice_comp_mod
   use seq_cdata_mod
   use seq_infodata_mod
   use seq_timemgr_mod
-  use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_flds_mod     , only: seq_flds_i2x_fields, &
-                               seq_flds_x2i_fields, &
-                               seq_flds_i2o_per_cat
-!
-! !PUBLIC TYPES:
+  use seq_comm_mct , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+  use seq_flds_mod , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
+  !
+  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: dice_comp_init
   public :: dice_comp_run
   public :: dice_comp_final
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   !--- other ---
   character(CS) :: myModelName = 'ice'   ! user defined model name
@@ -57,8 +56,7 @@ module dice_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
-                                         ! (ie. "_0001" or "")
+  character(len=16) :: inst_suffix       ! char string associated with instance (ie. "_0001" or "")
   character(CL) :: ice_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
   logical       :: firstcall             ! first call logical
@@ -106,71 +104,95 @@ module dice_comp_mod
 
   type(shr_strdata_type) :: SDICE
   type(mct_rearr) :: rearr
-!  type(mct_avect) :: avstrm   ! av of data from stream
+  !  type(mct_avect) :: avstrm   ! av of data from stream
   integer(IN) , pointer :: imask(:)
   real(R8)    , pointer :: yc(:)
   real(R8)    , pointer :: water(:)
   real(R8)    , pointer :: tfreeze(:)
-!  real(R8)    , pointer :: ifrac0(:)
+  !  real(R8)    , pointer :: ifrac0(:)
 
-  integer(IN),parameter :: ktrans = 42
-  character(16),parameter  :: avofld(1:ktrans) = &
-     (/"So_t            ","So_s            ","So_u            ","So_v            ", &
-       "So_dhdx         ","So_dhdy         ","Fioo_q          ","Sa_z            ", &
-       "Sa_u            ","Sa_v            ","Sa_ptem         ","Sa_tbot         ", &
-       "Sa_shum         ","Sa_dens         ","Faxa_swndr      ","Faxa_swvdr      ", &
-       "Faxa_swndf      ","Faxa_swvdf      ","Faxa_lwdn       ","Faxa_rain       ", &
-       "Faxa_snow       ","Si_t            ","Si_tref         ","Si_qref         ", &
-       "Si_ifrac        ","Si_avsdr        ","Si_anidr        ","Si_avsdf        ", &
-       "Si_anidf        ","Faii_taux       ","Faii_tauy       ","Faii_lat        ", &
-       "Faii_sen        ","Faii_lwup       ","Faii_evap       ","Faii_swnet      ", &
-       "Fioi_swpen      ","Fioi_melth      ","Fioi_meltw      ","Fioi_salt       ", &
-       "Fioi_taux       ","Fioi_tauy       " /)
+  integer(IN) :: ktrans
 
-  character(16),parameter  :: avifld(1:ktrans) = &
-     (/"to              ","s               ","uo              ","vo              ", &
-       "dhdx            ","dhdy            ","q               ","z               ", &
-       "ua              ","va              ","ptem            ","tbot            ", &
-       "shum            ","dens            ","swndr           ","swvdr           ", &
-       "swndf           ","swvdf           ","lwdn            ","rain            ", &
-       "snow            ","t               ","tref            ","qref            ", &
-       "ifrac           ","avsdr           ","anidr           ","avsdf           ", &
-       "anidf           ","tauxa           ","tauya           ","lat             ", &
-       "sen             ","lwup            ","evap            ","swnet           ", &
-       "swpen           ","melth           ","meltw           ","salt            ", &
-       "tauxo           ","tauyo           " /)
+  character(12),allocatable :: avifld(:)
+  character(12),allocatable :: avofld(:)
 
   save
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dice_comp_init
-!
-! !DESCRIPTION:
-!     initialize data ice model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  subroutine avfld_set(count_only)
+    logical, intent(in) :: count_only
 
-subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
+    integer(IN):: index ! temporary
+    index = 0
+
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="to",    driver_fld="So_t"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="s",     driver_fld="So_s"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="uo",    driver_fld="So_u"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="vo",    driver_fld="So_v"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="dhdx",  driver_fld="So_dhdx"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="dhdy",  driver_fld="So_dhdy"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="q",     driver_fld="Fioo_q"     )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="z",     driver_fld="Sa_z"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="ua",    driver_fld="Sa_u"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="va",    driver_fld="Sa_v"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="ptem",  driver_fld="Sa_ptem"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tbot",  driver_fld="Sa_tbot"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="shum",  driver_fld="Sa_shum"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="dens",  driver_fld="Sa_dens"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swndr", driver_fld="Faxa_swndr" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swvdr", driver_fld="Faxa_swvdr" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swndf", driver_fld="Faxa_swndf" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swvdf", driver_fld="Faxa_swvdf" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="lwdn",  driver_fld="Faxa_lwdn"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="rain",  driver_fld="Faxa_rain"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="snow",  driver_fld="Faxa_snow"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="t",     driver_fld="Si_t"       )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tref",  driver_fld="Si_tref"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="qref",  driver_fld="Si_qref"    )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="ifrac", driver_fld="Si_ifrac"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="avsdr", driver_fld="Si_avsdr"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="anidr", driver_fld="Si_anidr"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="avsdf", driver_fld="Si_avsdf"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="anidf", driver_fld="Si_anidf"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tauxa", driver_fld="Faii_taux"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tauya", driver_fld="Faii_tauy"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="lat",   driver_fld="Faii_lat"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="sen",   driver_fld="Faii_sen"   )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="lwup",  driver_fld="Faii_lwup"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="evap",  driver_fld="Faii_evap"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swnet", driver_fld="Faii_swnet" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="swpen", driver_fld="Fioi_swpen" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="melth", driver_fld="Fioi_melth" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="meltw", driver_fld="Fioi_meltw" )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="salt",  driver_fld="Fioi_salt"  )
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tauxo", driver_fld="Fioi_taux"  )  
+    call avfld_add(avifld, avofld, index, count_only, dice_fld="tauyo", driver_fld="Fioi_tauy"  )
+
+    if (count_only) then
+       allocate(avifld(index))
+       allocate(avofld(index))
+       ktrans = index
+    end if
+
+  end subroutine avfld_set
+
+  !===============================================================================
+  subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     use pio, only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !DESCRIPTION: initialize data ice model
+
+    ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock)            , intent(in)    :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2i, i2x
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
-
-!EOP
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -214,8 +236,8 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     !----- define namelist -----
     namelist / dice_nml / &
-        decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
-        force_prognostic_true
+         decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
+         force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
@@ -229,7 +251,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     character(*), parameter :: F90   = "('(dice_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(dice_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dice_comp_init) "
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
 
     call t_startf('DICE_INIT')
@@ -270,7 +292,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_getData(infodata,single_column=scmMode, &
-   &                          scmlat=scmlat, scmlon=scmLon)
+         &                          scmlat=scmlat, scmlon=scmLon)
 
     ice_present = .false.
     ice_prognostic = .false.
@@ -335,29 +357,27 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     !----------------------------------------------------------------------------
     ! Initialize IO
     !----------------------------------------------------------------------------
-    
 
     ice_pio_subsystem=>shr_pio_getiosys(trim(inst_name))
-    
+
     call shr_strdata_pioinit(SDICE, ice_pio_subsystem, shr_pio_getiotype(trim(inst_name)))
 
     !----------------------------------------------------------------------------
     ! Validate mode
     !----------------------------------------------------------------------------
 
-
     ice_mode = trim(SDICE%dataMode)
 
     ! check that we know how to handle the mode
 
     if (trim(ice_mode) == 'NULL' .or. &
-        trim(ice_mode) == 'SSTDATA' .or. &
-        trim(ice_mode) == 'COPYALL') then
-      if (my_task == master_task) &
-         write(logunit,F00) ' ice mode = ',trim(ice_mode)
+         trim(ice_mode) == 'SSTDATA' .or. &
+         trim(ice_mode) == 'COPYALL') then
+       if (my_task == master_task) &
+            write(logunit,F00) ' ice mode = ',trim(ice_mode)
     else
-      write(logunit,F00) ' ERROR illegal ice mode = ',trim(ice_mode)
-      call shr_sys_abort()
+       write(logunit,F00) ' ERROR illegal ice mode = ',trim(ice_mode)
+       call shr_sys_abort()
     endif
 
     call t_stopf('dice_readnml')
@@ -372,17 +392,17 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     call seq_timemgr_EClockGetData( EClock, calendar=calendar )
     if (scmmode) then
        if (my_task == master_task) &
-          write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+            write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init(SDICE,mpicom,compid,name='ice', &
-                   scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-                   calendar=calendar)
+            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
+            calendar=calendar)
     else
        call shr_strdata_init(SDICE,mpicom,compid,name='ice', &
-                   calendar=calendar)
+            calendar=calendar)
     endif
 
     if (trim(ice_mode) == 'SSTDATA' .or. &
-        trim(ice_mode) == 'COPYALL') then
+         trim(ice_mode) == 'COPYALL') then
        ice_prognostic = .true.
     endif
 
@@ -397,9 +417,9 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_PutData(infodata, &
-      ice_present=ice_present, ice_prognostic=ice_prognostic, &
-      iceberg_prognostic=.false., &
-      ice_nx=SDICE%nxg, ice_ny=SDICE%nyg )
+         ice_present=ice_present, ice_prognostic=ice_prognostic, &
+         iceberg_prognostic=.false., &
+         ice_nx=SDICE%nxg, ice_ny=SDICE%nyg )
 
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
@@ -466,8 +486,8 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     ! optional per thickness category fields
 
     if (seq_flds_i2o_per_cat) then
-      kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
-      kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
+       kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
+       kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
     end if
 
     call mct_aVect_init(x2i, rList=seq_flds_x2i_fields, lsize=lsize)
@@ -509,7 +529,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     if (read_restart) then
        if (trim(rest_file)      == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
@@ -582,377 +602,369 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     call t_stopf('DICE_INIT')
 
-end subroutine dice_comp_init
+  end subroutine dice_comp_init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dice_comp_run
-!
-! !DESCRIPTION:
-!     run method for dead ice model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
-subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
+    implicit none
 
-   implicit none
+    ! !DESCRIPTION: run method for data ice model
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(ESMF_Clock)            ,intent(in)    :: EClock
-   type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2i        ! driver -> dead
-   type(mct_aVect)             ,intent(inout) :: i2x        ! dead   -> driver
+    type(ESMF_Clock), intent(in)    :: EClock
+    type(seq_cdata) , intent(inout) :: cdata
+    type(mct_aVect) , intent(inout) :: x2i        ! driver -> ice
+    type(mct_aVect) , intent(inout) :: i2x        ! ice -> driver
 
-!EOP
+    !--- local ---
+    type(mct_gsMap)        , pointer :: gsmap
+    type(mct_gGrid)        , pointer :: ggrid
 
-   !--- local ---
-   type(mct_gsMap)        , pointer :: gsmap
-   type(mct_gGrid)        , pointer :: ggrid
+    integer(IN)   :: CurrentYMD        ! model date
+    integer(IN)   :: CurrentTOD        ! model sec into model date
+    integer(IN)   :: yy,mm,dd          ! year month day
+    integer(IN)   :: n                 ! indices
+    integer(IN)   :: nf                ! fields loop index
+    integer(IN)   :: nl                ! ice frac index
+    integer(IN)   :: lsize           ! size of attr vect
+    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
+    logical       :: glcrun_alarm      ! is glc going to run now
+    logical       :: newdata           ! has newdata been read
+    logical       :: mssrmlf           ! remove old data
+    integer(IN)   :: idt               ! integer timestep
+    real(R8)      :: dt                ! timestep
+    real(R8)      :: hn                ! h field
+    logical       :: write_restart     ! restart now
+    character(CL) :: case_name         ! case name
+    character(CL) :: rest_file         ! restart_file
+    character(CL) :: rest_file_strm    ! restart_file for stream
+    integer(IN)   :: nu                ! unit number
+    real(R8)      :: qmeltall          ! q that would melt all accumulated water
+    real(R8)      :: cosarg            ! for setting ice temp pattern
+    real(R8)      :: jday, jday0       ! elapsed day counters
+    character(CS) :: calendar          ! calendar type
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! ice frac index
-   integer(IN)   :: lsize           ! size of attr vect
-   integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-   logical       :: glcrun_alarm      ! is glc going to run now
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   integer(IN)   :: idt               ! integer timestep
-   real(R8)      :: dt                ! timestep
-   real(R8)      :: hn                ! h field
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm    ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
-   real(R8)      :: qmeltall          ! q that would melt all accumulated water
-   real(R8)      :: cosarg            ! for setting ice temp pattern
-   real(R8)      :: jday, jday0       ! elapsed day counters
-   character(CS) :: calendar          ! calendar type
+    type(seq_infodata_type), pointer :: infodata
 
-   type(seq_infodata_type), pointer :: infodata
+    character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
+    character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: subName = "(dice_comp_run) "
+    !-------------------------------------------------------------------------------
 
-   character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
-   character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
-   character(*), parameter :: subName = "(dice_comp_run) "
-!-------------------------------------------------------------------------------
+    call t_startf('DICE_RUN')
 
-   call t_startf('DICE_RUN')
+    call t_startf('dice_run1')
 
-   call t_startf('dice_run1')
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to my log file
+    !----------------------------------------------------------------------------
+    call shr_file_getLogUnit (shrlogunit)
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (logUnit)
 
-  !----------------------------------------------------------------------------
-  ! Reset shr logging to my log file
-  !----------------------------------------------------------------------------
-   call shr_file_getLogUnit (shrlogunit)
-   call shr_file_getLogLevel(shrloglev)
-   call shr_file_setLogUnit (logUnit)
+    call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid)
 
-   call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid)
+    call seq_cdata_setptrs(cdata, infodata=infodata)
 
-   call seq_cdata_setptrs(cdata, infodata=infodata)
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar)
+    dt = idt * 1.0_r8
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
-   call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-   call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-   call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar)
-   dt = idt * 1.0_r8
-   write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    call t_stopf('dice_run1')
 
-   call t_stopf('dice_run1')
+    !--------------------
+    ! UNPACK
+    !--------------------
 
-   !--------------------
-   ! UNPACK
-   !--------------------
+    call t_startf('dice_unpack')
 
-   call t_startf('dice_unpack')
+    !  lsize = mct_avect_lsize(x2i)
 
-!  lsize = mct_avect_lsize(x2i)
+    call t_stopf('dice_unpack')
 
-   call t_stopf('dice_unpack')
+    !--------------------
+    ! ADVANCE ICE
+    !--------------------
 
-   !--------------------
-   ! ADVANCE ICE
-   !--------------------
+    call t_barrierf('dice_BARRIER',mpicom)
+    call t_startf('dice')
 
-   call t_barrierf('dice_BARRIER',mpicom)
-   call t_startf('dice')
+    !--- copy all fields from streams to i2x as default ---
 
-   !--- copy all fields from streams to i2x as default ---
+    if (trim(ice_mode) /= 'NULL') then
+       call t_startf('dice_strdata_advance')
+       call shr_strdata_advance(SDICE,currentYMD,currentTOD,mpicom,'dice')
+       call t_stopf('dice_strdata_advance')
+       call t_barrierf('dice_scatter_BARRIER',mpicom)
+       call t_startf('dice_scatter')
+       do n = 1,SDICE%nstreams
+          call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld,rearr)
+       enddo
+       call t_stopf('dice_scatter')
+    else
+       call mct_aVect_zero(i2x)
+    endif
 
-   if (trim(ice_mode) /= 'NULL') then
-      call t_startf('dice_strdata_advance')
-      call shr_strdata_advance(SDICE,currentYMD,currentTOD,mpicom,'dice')
-      call t_stopf('dice_strdata_advance')
-      call t_barrierf('dice_scatter_BARRIER',mpicom)
-      call t_startf('dice_scatter')
-      do n = 1,SDICE%nstreams
-         call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld,rearr)
-      enddo
-      call t_stopf('dice_scatter')
-   else
-      call mct_aVect_zero(i2x)
-   endif
+    call t_startf('dice_mode')
 
-   call t_startf('dice_mode')
+    select case (trim(ice_mode))
 
-   select case (trim(ice_mode))
+    case('COPYALL') 
+       ! do nothing extra
 
-   case('COPYALL') 
-      ! do nothing extra
+    case('SSTDATA')
+       if (firstcall .and. .not. read_restart) then
+          !         iFrac0 = iFrac  ! previous step's ice fraction
+          water  = 0.0_R8 ! previous step's water accumulation
+          where (i2x%rAttr(kiFrac,:) > 0.0_R8) water(:) = flux_Qacc0 
+       endif
 
-   case('SSTDATA')
-      if (firstcall .and. .not. read_restart) then
-!         iFrac0 = iFrac  ! previous step's ice fraction
-         water  = 0.0_R8 ! previous step's water accumulation
-         where (i2x%rAttr(kiFrac,:) > 0.0_R8) water(:) = flux_Qacc0 
-      endif
+       ! tcraig, feb 10, 2012, ymd2eday no longer exists, use ymd2julian instead
+       !   this could be improved for use in gregorian calendar
+       !      call shr_cal_ymd2eday(0,mm,dd,eDay ,calendar)    ! model date
+       !      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
+       !      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(currentTOD,R8)/cDay - real(eDay0,R8))/365.0_R8
+       call shr_cal_ymd2julian(0,mm,dd,currentTOD,jDay ,calendar)    ! julian day for model
+       call shr_cal_ymd2julian(0, 9, 1,0         ,jDay0,calendar)    ! julian day for Sept 1
+       cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
-! tcraig, feb 10, 2012, ymd2eday no longer exists, use ymd2julian instead
-!   this could be improved for use in gregorian calendar
-!      call shr_cal_ymd2eday(0,mm,dd,eDay ,calendar)    ! model date
-!      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
-!      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(currentTOD,R8)/cDay - real(eDay0,R8))/365.0_R8
-      call shr_cal_ymd2julian(0,mm,dd,currentTOD,jDay ,calendar)    ! julian day for model
-      call shr_cal_ymd2julian(0, 9, 1,0         ,jDay0,calendar)    ! julian day for Sept 1
-      cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
+       lsize = mct_avect_lsize(i2x)
 
-      lsize = mct_avect_lsize(i2x)
+       tfreeze = shr_frz_freezetemp(x2i%rAttr(ksalinity,:)) + tFrz ! convert to Kelvin
 
-      tfreeze = shr_frz_freezetemp(x2i%rAttr(ksalinity,:)) + tFrz ! convert to Kelvin
+       do n = 1,lsize
 
-      do n = 1,lsize
+          !--- fix erroneous iFrac ---
+          i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n))) 
 
-         !--- fix erroneous iFrac ---
-         i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n))) 
+          !--- fabricate ice surface T, fix erroneous iFrac ---
+          if ( yc(n) > 0.0_R8) then 
+             i2x%rAttr(kt,n) = 260.0_R8 + 10.0_R8*cos(cosArg)
+          else
+             i2x%rAttr(kt,n) = 260.0_R8 - 10.0_R8*cos(cosArg)
+          end if
 
-         !--- fabricate ice surface T, fix erroneous iFrac ---
-         if ( yc(n) > 0.0_R8) then 
-            i2x%rAttr(kt,n) = 260.0_R8 + 10.0_R8*cos(cosArg)
-         else
-            i2x%rAttr(kt,n) = 260.0_R8 - 10.0_R8*cos(cosArg)
-         end if
+          !--- set albedos (constant) ---
+          i2x%rAttr(kavsdr,n) = ax_vsdr 
+          i2x%rAttr(kanidr,n) = ax_nidr 
+          i2x%rAttr(kavsdf,n) = ax_vsdf 
+          i2x%rAttr(kanidf,n) = ax_nidf 
 
-         !--- set albedos (constant) ---
-         i2x%rAttr(kavsdr,n) = ax_vsdr 
-         i2x%rAttr(kanidr,n) = ax_nidr 
-         i2x%rAttr(kavsdf,n) = ax_vsdf 
-         i2x%rAttr(kanidf,n) = ax_nidf 
+          !--- swnet is sent to cpl as a diagnostic quantity only ---
+          !--- newly recv'd swdn goes with previously sent albedo ---
+          !--- but albedos are (currently) time invariant         ---
+          i2x%rAttr(kswnet,n) = (1.0_R8 - i2x%rAttr(kavsdr,n))*x2i%rAttr(kswvdr,n) &
+               &                   + (1.0_R8 - i2x%rAttr(kanidr,n))*x2i%rAttr(kswndr,n) &
+               &                   + (1.0_R8 - i2x%rAttr(kavsdf,n))*x2i%rAttr(kswvdf,n) &
+               &                   + (1.0_R8 - i2x%rAttr(kanidf,n))*x2i%rAttr(kswndf,n)
 
-         !--- swnet is sent to cpl as a diagnostic quantity only ---
-         !--- newly recv'd swdn goes with previously sent albedo ---
-         !--- but albedos are (currently) time invariant         ---
-         i2x%rAttr(kswnet,n) = (1.0_R8 - i2x%rAttr(kavsdr,n))*x2i%rAttr(kswvdr,n) &
-         &                   + (1.0_R8 - i2x%rAttr(kanidr,n))*x2i%rAttr(kswndr,n) &
-         &                   + (1.0_R8 - i2x%rAttr(kavsdf,n))*x2i%rAttr(kswvdf,n) &
-         &                   + (1.0_R8 - i2x%rAttr(kanidf,n))*x2i%rAttr(kswndf,n)
+          !--- compute melt/freeze water balance, adjust iFrac  -------------
+          if ( .not. flux_Qacc ) then ! Q accumulation option is OFF
+             i2x%rAttr(kmelth,n) = min(x2i%rAttr(kq,n),0.0_R8 ) ! q<0 => melt potential
+             i2x%rAttr(kmelth,n) = max(i2x%rAttr(kmelth,n),Flux_Qmin   ) ! limit the melt rate
+             i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice   ! corresponding water flux
 
-         !--- compute melt/freeze water balance, adjust iFrac  -------------
-         if ( .not. flux_Qacc ) then ! Q accumulation option is OFF
-            i2x%rAttr(kmelth,n) = min(x2i%rAttr(kq,n),0.0_R8 ) ! q<0 => melt potential
-            i2x%rAttr(kmelth,n) = max(i2x%rAttr(kmelth,n),Flux_Qmin   ) ! limit the melt rate
-            i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice   ! corresponding water flux
+          else                                 ! Q accumulation option is ON
+             !--------------------------------------------------------------
+             ! 1a) Q<0 & iFrac > 0  =>  infinite supply of water to melt
+             ! 1b) Q<0 & iFrac = 0  =>  melt accumulated water only
+             ! 2a) Q>0 & iFrac > 0  =>  zero-out accumulated water
+             ! 2b) Q>0 & iFrac = 0  =>  accumulated water
+             !--------------------------------------------------------------
+             if ( x2i%rAttr(kq,n) <  0.0_R8 ) then ! Q<0 => melt
+                if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
+                   i2x%rAttr(kmelth,n) = i2x%rAttr(kiFrac,n)*max(x2i%rAttr(kq,n),Flux_Qmin)
+                   i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice
+                   !  water(n) = < don't change this value >
+                else
+                   Qmeltall   = -water(n)*latice/dt
+                   i2x%rAttr(kmelth,n) = max(x2i%rAttr(kq,n), Qmeltall, Flux_Qmin )
+                   i2x%rAttr(kmeltw,n) = -i2x%rAttr(kmelth,n)/latice
+                   water(n) =  water(n) - i2x%rAttr(kmeltw,n)*dt
+                end if
+             else                       ! Q>0 => freeze
+                if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
+                   i2x%rAttr(kmelth,n) = 0.0_R8
+                   i2x%rAttr(kmeltw,n) = 0.0_R8
+                   water(n) = 0.0_R8
+                else
+                   i2x%rAttr(kmelth,n) = 0.0_R8
+                   i2x%rAttr(kmeltw,n) = 0.0_R8
+                   water(n) = water(n) + dt*x2i%rAttr(kq,n)/latice
+                end if
+             end if
 
-         else                                 ! Q accumulation option is ON
-            !--------------------------------------------------------------
-            ! 1a) Q<0 & iFrac > 0  =>  infinite supply of water to melt
-            ! 1b) Q<0 & iFrac = 0  =>  melt accumulated water only
-            ! 2a) Q>0 & iFrac > 0  =>  zero-out accumulated water
-            ! 2b) Q>0 & iFrac = 0  =>  accumulated water
-            !--------------------------------------------------------------
-            if ( x2i%rAttr(kq,n) <  0.0_R8 ) then ! Q<0 => melt
-               if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
-                  i2x%rAttr(kmelth,n) = i2x%rAttr(kiFrac,n)*max(x2i%rAttr(kq,n),Flux_Qmin)
-                  i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice
-               !  water(n) = < don't change this value >
-               else
-                  Qmeltall   = -water(n)*latice/dt
-                  i2x%rAttr(kmelth,n) = max(x2i%rAttr(kq,n), Qmeltall, Flux_Qmin )
-                  i2x%rAttr(kmeltw,n) = -i2x%rAttr(kmelth,n)/latice
-                  water(n) =  water(n) - i2x%rAttr(kmeltw,n)*dt
-               end if
-            else                       ! Q>0 => freeze
-               if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
-                  i2x%rAttr(kmelth,n) = 0.0_R8
-                  i2x%rAttr(kmeltw,n) = 0.0_R8
-                  water(n) = 0.0_R8
-               else
-                  i2x%rAttr(kmelth,n) = 0.0_R8
-                  i2x%rAttr(kmeltw,n) = 0.0_R8
-                  water(n) = water(n) + dt*x2i%rAttr(kq,n)/latice
-               end if
-            end if
+             if (water(n) < 1.0e-16_R8 ) water(n) = 0.0_R8
 
-            if (water(n) < 1.0e-16_R8 ) water(n) = 0.0_R8
+             !--- non-zero water => non-zero iFrac ---
+             if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
+                i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
+                ! i2x%rAttr(kT,n) = tfreeze(n)     ! T can be above freezing?!?
+             end if
 
-            !--- non-zero water => non-zero iFrac ---
-            if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
-               i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
-               ! i2x%rAttr(kT,n) = tfreeze(n)     ! T can be above freezing?!?
-            end if
+             !--- cpl multiplies melth & meltw by iFrac ---
+             !--- divide by iFrac here => fixed quantity flux (not per area) ---
+             if (i2x%rAttr(kiFrac,n) > 0.0_R8) then
+                i2x%rAttr(kiFrac,n) = max( 0.01_R8, i2x%rAttr(kiFrac,n)) ! min iFrac
+                i2x%rAttr(kmelth,n) = i2x%rAttr(kmelth,n)/i2x%rAttr(kiFrac,n)
+                i2x%rAttr(kmeltw,n) = i2x%rAttr(kmeltw,n)/i2x%rAttr(kiFrac,n)
+             else
+                i2x%rAttr(kmelth,n) = 0.0_R8
+                i2x%rAttr(kmeltw,n) = 0.0_R8
+             end if
+          end if
 
-            !--- cpl multiplies melth & meltw by iFrac ---
-            !--- divide by iFrac here => fixed quantity flux (not per area) ---
-            if (i2x%rAttr(kiFrac,n) > 0.0_R8) then
-               i2x%rAttr(kiFrac,n) = max( 0.01_R8, i2x%rAttr(kiFrac,n)) ! min iFrac
-               i2x%rAttr(kmelth,n) = i2x%rAttr(kmelth,n)/i2x%rAttr(kiFrac,n)
-               i2x%rAttr(kmeltw,n) = i2x%rAttr(kmeltw,n)/i2x%rAttr(kiFrac,n)
-            else
-               i2x%rAttr(kmelth,n) = 0.0_R8
-               i2x%rAttr(kmeltw,n) = 0.0_R8
-            end if
-         end if
+          !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
+          i2x%rAttr(kt,n) = tfreeze(n) + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze(n)) 
 
-         !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
-         i2x%rAttr(kt,n) = tfreeze(n) + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze(n)) 
+       end do
 
-      end do
+       !----------------------------------------------------------------------------
+       ! compute atm/ice surface fluxes
+       !----------------------------------------------------------------------------
+       call shr_flux_atmIce(iMask  ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:), &
+            x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:),  &
+            i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
+            i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
+            i2x%rAttr(kqref,:) )
 
-      !----------------------------------------------------------------------------
-      ! compute atm/ice surface fluxes
-      !----------------------------------------------------------------------------
-      call shr_flux_atmIce(iMask  ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:), &
-               x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:),  &
-               i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
-               i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
-               i2x%rAttr(kqref,:) )
+       !----------------------------------------------------------------------------
+       ! compute ice/oce surface fluxes (except melth & meltw, see above)
+       !----------------------------------------------------------------------------
+       do n=1,lsize
+          if (iMask(n) == 0) then
+             i2x%rAttr(kswpen,n) = spval
+             i2x%rAttr(kmelth,n) = spval
+             i2x%rAttr(kmeltw,n) = spval
+             i2x%rAttr(ksalt ,n) = spval
+             i2x%rAttr(ktauxo,n) = spval
+             i2x%rAttr(ktauyo,n) = spval
+             i2x%rAttr(kiFrac,n) = 0.0_R8
+          else
+             !--- penetrating short wave ---
+             i2x%rAttr(kswpen,n) = max(0.0_R8, flux_swpf*i2x%rAttr(kswnet,n) ) ! must be non-negative
 
-      !----------------------------------------------------------------------------
-      ! compute ice/oce surface fluxes (except melth & meltw, see above)
-      !----------------------------------------------------------------------------
-      do n=1,lsize
-         if (iMask(n) == 0) then
-            i2x%rAttr(kswpen,n) = spval
-            i2x%rAttr(kmelth,n) = spval
-            i2x%rAttr(kmeltw,n) = spval
-            i2x%rAttr(ksalt ,n) = spval
-            i2x%rAttr(ktauxo,n) = spval
-            i2x%rAttr(ktauyo,n) = spval
-            i2x%rAttr(kiFrac,n) = 0.0_R8
-         else
-            !--- penetrating short wave ---
-            i2x%rAttr(kswpen,n) = max(0.0_R8, flux_swpf*i2x%rAttr(kswnet,n) ) ! must be non-negative
+             !--- i/o surface stress ( = atm/ice stress) ---
+             i2x%rAttr(ktauxo,n) = i2x%rAttr(ktauxa,n)
+             i2x%rAttr(ktauyo,n) = i2x%rAttr(ktauya,n)
 
-            !--- i/o surface stress ( = atm/ice stress) ---
-            i2x%rAttr(ktauxo,n) = i2x%rAttr(ktauxa,n)
-            i2x%rAttr(ktauyo,n) = i2x%rAttr(ktauya,n)
+             !--- salt flux ---
+             i2x%rAttr(ksalt ,n) = 0.0_R8
+          end if
 
-            !--- salt flux ---
-           i2x%rAttr(ksalt ,n) = 0.0_R8
-         end if
-
-!         !--- save ifrac for next timestep
-!         iFrac0(n) = i2x%rAttr(kiFrac,n)
-      end do
+          !         !--- save ifrac for next timestep
+          !         iFrac0(n) = i2x%rAttr(kiFrac,n)
+       end do
 
 
-   end select
+    end select
 
-   ! optional per thickness category fields
+    ! optional per thickness category fields
 
-   if (seq_flds_i2o_per_cat) then
-      do n=1,lsize
-         i2x%rAttr(kiFrac_01,n)       = i2x%rAttr(kiFrac,n)
-         i2x%rAttr(kswpen_iFrac_01,n) = i2x%rAttr(kswpen,n) * i2x%rAttr(kiFrac,n)
-      end do
-   end if
+    if (seq_flds_i2o_per_cat) then
+       do n=1,lsize
+          i2x%rAttr(kiFrac_01,n)       = i2x%rAttr(kiFrac,n)
+          i2x%rAttr(kswpen_iFrac_01,n) = i2x%rAttr(kswpen,n) * i2x%rAttr(kiFrac,n)
+       end do
+    end if
 
-   call t_stopf('dice_mode')
+    call t_stopf('dice_mode')
 
-   if (write_restart) then
-      call t_startf('dice_restart')
-      call seq_infodata_GetData( infodata, case_name=case_name)
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dice'//trim(inst_suffix)//'.r.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dice'//trim(inst_suffix)//'.rs1.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
-      if (my_task == master_task) then
-         nu = shr_file_getUnit()
-         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-         write(nu,'(a)') rest_file
-         write(nu,'(a)') rest_file_strm
-         close(nu)
-         call shr_file_freeUnit(nu)
-      endif
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+    if (write_restart) then
+       call t_startf('dice_restart')
+       call seq_infodata_GetData( infodata, case_name=case_name)
+       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dice'//trim(inst_suffix)//'.r.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dice'//trim(inst_suffix)//'.rs1.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
-      call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
-      call shr_sys_flush(logunit)
-      call t_stopf('dice_restart')
-   endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('dice_restart')
+    endif
 
-   call t_stopf('dice')
+    call t_stopf('dice')
 
-   !----------------------------------------------------------------------------
-   ! Log output for model date
-   ! Reset shr logging to original values
-   !----------------------------------------------------------------------------
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
 
-   call t_startf('dice_run2')
-   if (my_task == master_task) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
-   end if
-   firstcall = .false.
-      
-   call shr_file_setLogUnit (shrlogunit)
-   call shr_file_setLogLevel(shrloglev)
-   call shr_sys_flush(logunit)
-   call t_stopf('dice_run2')
+    call t_startf('dice_run2')
+    if (my_task == master_task) then
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
+    end if
+    firstcall = .false.
 
-   call t_stopf('DICE_RUN')
+    call shr_file_setLogUnit (shrlogunit)
+    call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
+    call t_stopf('dice_run2')
 
-end subroutine dice_comp_run
+    call t_stopf('DICE_RUN')
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dice_comp_final
-!
-! !DESCRIPTION:
-!     finalize method for dead ice model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-!
-subroutine dice_comp_final()
+  end subroutine dice_comp_run
 
-   implicit none
+  !===============================================================================
+  subroutine dice_comp_final()
 
-!EOP
+    ! !DESCRIPTION: finalize method for dead ice model
 
-   !--- formats ---
-   character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
-   character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
-   character(*), parameter :: subName = "(dice_comp_final) "
+    implicit none
 
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+    !--- formats ---
+    character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(dice_comp_final) "
 
-   call t_startf('DICE_FINAL')
+    !-------------------------------------------------------------------------------
 
-   if (my_task == master_task) then
-      write(logunit,F91) 
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
-   end if
-      
-   call t_stopf('DICE_FINAL')
+    call t_startf('DICE_FINAL')
 
-end subroutine dice_comp_final
-!===============================================================================
-!===============================================================================
+    if (my_task == master_task) then
+       write(logunit,F91) 
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91) 
+    end if
+
+    call t_stopf('DICE_FINAL')
+
+  end subroutine dice_comp_final
+
+  !===============================================================================
+  subroutine avfld_add(avofld, avifld, size, count_only, dice_fld, driver_fld)
+    character(len=*), intent(inout) :: avofld(:)
+    character(len=*), intent(inout) :: avifld(:)
+    integer         , intent(inout) :: size
+    logical         , intent(in)    :: count_only
+    character(len=*), intent(in)    :: dice_fld
+    character(len=*), intent(in)    :: driver_fld
+    
+    size = size + 1
+    if (count_only) then
+       return
+    else
+       avifld(size) = trim(dice_fld)
+       avofld(size) = trim(driver_fld)
+    end if
+  end subroutine avfld_add
 
 end module dice_comp_mod

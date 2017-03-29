@@ -3,21 +3,21 @@
 #endif
 module docn_comp_mod
 
-! !USES:
+  ! !USES:
 
   use shr_const_mod
-  use shr_frz_mod, only: shr_frz_freezetemp
+  use shr_frz_mod,       only: shr_frz_freezetemp
   use shr_sys_mod
-  use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
-                               CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod     , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel, &
-                               shr_file_setlogunit, shr_file_setloglevel, shr_file_setio, &
-                               shr_file_freeunit
-  use shr_mpi_mod      , only: shr_mpi_bcast
+  use shr_kind_mod,      only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+  use shr_kind_mod,      only: CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_file_mod,      only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
+  use shr_file_mod,      only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
+  use shr_file_mod,      only: shr_file_freeunit
+  use shr_mpi_mod ,      only: shr_mpi_bcast
   use mct_mod
   use esmf
   use perf_mod
-  use pio, only : iosystem_desc_t, pio_init, pio_rearr_box
+  use pio,               only : iosystem_desc_t, pio_init, pio_rearr_box
 
   use shr_strdata_mod
   use shr_dmodel_mod
@@ -27,24 +27,23 @@ module docn_comp_mod
   use seq_infodata_mod
   use seq_timemgr_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_flds_mod     , only: seq_flds_o2x_fields, &
-                               seq_flds_x2o_fields
-!
-! !PUBLIC TYPES:
+  use seq_flds_mod     , only: seq_flds_o2x_fields, seq_flds_x2o_fields
+  !
+  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: docn_comp_init
   public :: docn_comp_run
   public :: docn_comp_final
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   !--- other ---
   type(iosystem_desc_t), pointer :: iosystem
@@ -56,11 +55,10 @@ module docn_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
-                                         ! (ie. "_0001" or "")
+  character(len=16) :: inst_suffix       ! char string associated with instance (ie. "_0001" or "")
   character(CL) :: ocn_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
-  logical       :: firstcall             ! first call logical
+  logical       :: firstcall = .true.    ! first call logical
   logical       :: scmMode = .false.     ! single column mode
   real(R8)      :: scmLat  = shr_const_SPVAL  ! single column lat
   real(R8)      :: scmLon  = shr_const_SPVAL  ! single column lon
@@ -88,52 +86,75 @@ module docn_comp_mod
   integer , pointer :: imask(:)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
-  integer(IN),parameter :: ktrans = 29
-  character(12),parameter  :: avifld(1:ktrans) = &
-     (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
-        "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
-        "melth       ","salt        ","prec        ","snow        ","rain        ", &
-        "evap        ","meltw       ","rofl        ","rofi        ",                &
-        "t           ","u           ","v           ","dhdx        ","dhdy        ", &
-        "s           ","q           ","h           ","qbot        ","fswpen      "  /)
-  character(12),parameter  :: avofld(1:ktrans) = &
-     (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
-        "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
-        "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
-        "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
-        "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
-        "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
+  integer(IN) :: ktrans
+
+  character(12),allocatable :: avifld(:)
+  character(12),allocatable :: avofld(:)
 
   save
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_init
-!
-! !DESCRIPTION:
-!     initialize data ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
 
-subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
+  subroutine avfld_set(count_only)
+    logical, intent(in) :: count_only
+
+    integer(IN):: index ! temporary
+    index = 0
+
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="ifrac",  driver_fld="Si_ifrac"   )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="pslv",   driver_fld="Sa_pslv"    )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="duu10n", driver_fld="So_duu10n"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="taux",   driver_fld="Foxx_taux"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="tauy",   driver_fld="Foxx_tauy"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="swnet",  driver_fld="Foxx_swnet" )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="lat",    driver_fld="Foxx_lat"   )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="sen",    driver_fld="Foxx_sen"   )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="lwup",   driver_fld="Foxx_lwup"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="lwdn",   driver_fld="Faxa_lwdn"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="melth",  driver_fld="Fioi_melth" )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="salt",   driver_fld="Fioi_salt"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="prec",   driver_fld="Faxa_prec"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="snow",   driver_fld="Faxa_snow"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="rain",   driver_fld="Faxa_rain"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="evap",   driver_fld="Foxx_evap"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="meltw",  driver_fld="Fioi_meltw" )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="rofl",   driver_fld="Foxx_rofl"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="rofi",   driver_fld="Foxx_rofi"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="t",      driver_fld="So_t"       )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="u",      driver_fld="So_u"       )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="v",      driver_fld="So_v"       )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="dhdx",   driver_fld="So_dhdx"    )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="dhdy",   driver_fld="So_dhdy"    )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="s",      driver_fld="So_s"       )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="q",      driver_fld="Fioo_q"     )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="h",      driver_fld="strm_h"     )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="qbot",   driver_fld="strm_qbot"  )
+    call avfld_add(avifld, avofld, index, count_only, docn_fld="fswpen", driver_fld="So_fswpen"  )
+ 
+    if (count_only) then
+       allocate(avifld(index))
+       allocate(avofld(index))
+       ktrans = index
+    end if
+
+  end subroutine avfld_set
+
+  !===============================================================================
+  subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
+
+    ! !DESCRIPTION: initialize data ocn model
+
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
-
+    ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(in)    :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2o, o2x
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
-
-!EOP
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -177,8 +198,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     !----- define namelist -----
     namelist / docn_nml / &
-        decomp, restfilm, restfils, &
-        force_prognostic_true
+         decomp, restfilm, restfils, force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
@@ -191,12 +211,18 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     character(*), parameter :: F90   = "('(docn_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(docn_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(docn_comp_init) "
-!-------------------------------------------------------------------------------
-
+    !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_INIT')
 
-    firstcall = .true.
+    if (firstcall) then
+       ! Below - the first count_only is to get the size to allocate avofld and avifld, the second count_only is 
+       ! after avofld and avifld are allocated to actually fill them in
+       ! The driver_fld entries are added to avofld and the datm_fld entries are added to avifld
+
+       call avfld_set(count_only=.true.)
+       call avfld_set(count_only=.false.)
+    end if
 
     ! Set cdata pointers
 
@@ -217,8 +243,8 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     if (my_task == master_task) then
        inquire(FILE='ocn_modelio.nml'//trim(inst_suffix), exist=exists)
        if (exists) then
-         logUnit = shr_file_getUnit()
-         call shr_file_setIO('ocn_modelio.nml'//trim(inst_suffix),logUnit)
+          logUnit = shr_file_getUnit()
+          call shr_file_setIO('ocn_modelio.nml'//trim(inst_suffix),logUnit)
        end if
     endif
 
@@ -234,7 +260,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_getData(infodata,single_column=scmMode, &
-   &                          scmlat=scmlat, scmlon=scmLon)
+         &                          scmlat=scmlat, scmlon=scmLon)
 
     ocn_present = .false.
     ocn_prognostic = .false.
@@ -271,7 +297,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
     if (force_prognostic_true) then
@@ -295,15 +321,15 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     ! check that we know how to handle the mode
 
     if (trim(ocn_mode) == 'NULL' .or. &
-        trim(ocn_mode) == 'SSTDATA' .or. &
-        trim(ocn_mode) == 'COPYALL' .or. &
-        trim(ocn_mode) == 'IAF' .or. &
-        trim(ocn_mode) == 'SOM') then
-      if (my_task == master_task) &
-         write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
+         trim(ocn_mode) == 'SSTDATA' .or. &
+         trim(ocn_mode) == 'COPYALL' .or. &
+         trim(ocn_mode) == 'IAF' .or. &
+         trim(ocn_mode) == 'SOM') then
+       if (my_task == master_task) &
+            write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
     else
-      write(logunit,F00) ' ERROR illegal ocn mode = ',trim(ocn_mode)
-      call shr_sys_abort()
+       write(logunit,F00) ' ERROR illegal ocn mode = ',trim(ocn_mode)
+       call shr_sys_abort()
     endif
 
     call t_stopf('docn_readnml')
@@ -318,18 +344,18 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        ocn_present = .true.
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
        iosystem => shr_pio_getiosys(trim(inst_name))
-       
+
        call shr_strdata_pioinit(SDOCN, iosystem, shr_pio_getiotype(trim(inst_name)))
 
        if (scmmode) then
           if (my_task == master_task) &
-             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+               write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-                      scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-                      calendar=calendar)
+               scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
+               calendar=calendar)
        else
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-                      calendar=calendar)
+               calendar=calendar)
        endif
     endif
 
@@ -353,8 +379,8 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_PutData(infodata, ocnrof_prognostic=ocnrof_prognostic, &
-      ocn_present=ocn_present, ocn_prognostic=ocn_prognostic, &
-      ocn_nx=SDOCN%nxg, ocn_ny=SDOCN%nyg )
+         ocn_present=ocn_present, ocn_prognostic=ocn_prognostic, &
+         ocn_nx=SDOCN%nxg, ocn_ny=SDOCN%nyg )
 
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
@@ -438,7 +464,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     if (read_restart) then
        if (trim(rest_file) == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
@@ -500,309 +526,299 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     call t_stopf('DOCN_INIT')
 
-end subroutine docn_comp_init
+  end subroutine docn_comp_init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_run
-!
-! !DESCRIPTION:
-!     run method for dead ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
-subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
+    ! !DESCRIPTION: run method for dead ocn model
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock)            ,intent(in)    :: EClock
+    type(seq_cdata)             ,intent(inout) :: cdata
+    type(mct_aVect)             ,intent(inout) :: x2o        ! driver -> dead
+    type(mct_aVect)             ,intent(inout) :: o2x        ! dead   -> driver
 
-   type(ESMF_Clock)            ,intent(in)    :: EClock
-   type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2o        ! driver -> dead
-   type(mct_aVect)             ,intent(inout) :: o2x        ! dead   -> driver
+    !--- local ---
+    type(mct_gsMap)        , pointer :: gsmap
+    type(mct_gGrid)        , pointer :: ggrid
 
-!EOP
+    integer(IN)   :: CurrentYMD        ! model date
+    integer(IN)   :: CurrentTOD        ! model sec into model date
+    integer(IN)   :: yy,mm,dd          ! year month day
+    integer(IN)   :: n                 ! indices
+    integer(IN)   :: nf                ! fields loop index
+    integer(IN)   :: nl                ! ocn frac index
+    integer(IN)   :: lsize           ! size of attr vect
+    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
+    logical       :: glcrun_alarm      ! is glc going to run now
+    logical       :: newdata           ! has newdata been read
+    logical       :: mssrmlf           ! remove old data
+    integer(IN)   :: idt               ! integer timestep
+    real(R8)      :: dt                ! timestep
+    real(R8)      :: hn                ! h field
+    logical       :: write_restart     ! restart now
+    character(CL) :: case_name         ! case name
+    character(CL) :: rest_file         ! restart_file
+    character(CL) :: rest_file_strm    ! restart_file for stream
+    integer(IN)   :: nu                ! unit number
+    integer(IN)   :: nflds_x2o
+    type(seq_infodata_type), pointer :: infodata
 
-   !--- local ---
-   type(mct_gsMap)        , pointer :: gsmap
-   type(mct_gGrid)        , pointer :: ggrid
+    real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
+         /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
+    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
+    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: subName = "(docn_comp_run) "
+    !-------------------------------------------------------------------------------
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! ocn frac index
-   integer(IN)   :: lsize           ! size of attr vect
-   integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-   logical       :: glcrun_alarm      ! is glc going to run now
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   integer(IN)   :: idt               ! integer timestep
-   real(R8)      :: dt                ! timestep
-   real(R8)      :: hn                ! h field
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm    ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
-   integer(IN)   :: nflds_x2o
-   type(seq_infodata_type), pointer :: infodata
+    call t_startf('DOCN_RUN')
 
-   real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
-      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
-   character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
-   character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
-   character(*), parameter :: subName = "(docn_comp_run) "
-!-------------------------------------------------------------------------------
+    call t_startf('docn_run1')
 
-   call t_startf('DOCN_RUN')
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to my log file
+    !----------------------------------------------------------------------------
+    call shr_file_getLogUnit (shrlogunit)
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (logUnit)
 
-   call t_startf('docn_run1')
+    call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid)
 
-  !----------------------------------------------------------------------------
-  ! Reset shr logging to my log file
-  !----------------------------------------------------------------------------
-   call shr_file_getLogUnit (shrlogunit)
-   call shr_file_getLogLevel(shrloglev)
-   call shr_file_setLogUnit (logUnit)
+    call seq_cdata_setptrs(cdata, infodata=infodata)
 
-   call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid)
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    call seq_timemgr_EClockGetData( EClock, dtime=idt)
+    dt = idt * 1.0_R8
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
-   call seq_cdata_setptrs(cdata, infodata=infodata)
+    call t_stopf('docn_run1')
 
-   call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-   call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-   call seq_timemgr_EClockGetData( EClock, dtime=idt)
-   dt = idt * 1.0_R8
-   write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    !--------------------
+    ! UNPACK
+    !--------------------
 
-   call t_stopf('docn_run1')
+    call t_startf('docn_unpack')
 
-   !--------------------
-   ! UNPACK
-   !--------------------
+    !  lsize = mct_avect_lsize(x2o)
+    !  nflds_x2o = mct_avect_nRattr(x2o)
 
-   call t_startf('docn_unpack')
+    !   do nf=1,nflds_x2o
+    !   do n=1,lsize
+    !     ?? = x2o%rAttr(nf,n)
+    !   enddo
+    !   enddo
 
-!  lsize = mct_avect_lsize(x2o)
-!  nflds_x2o = mct_avect_nRattr(x2o)
+    call t_stopf('docn_unpack')
 
-!   do nf=1,nflds_x2o
-!   do n=1,lsize
-!     ?? = x2o%rAttr(nf,n)
-!   enddo
-!   enddo
+    !--------------------
+    ! ADVANCE OCN
+    !--------------------
 
-   call t_stopf('docn_unpack')
+    call t_barrierf('docn_BARRIER',mpicom)
+    call t_startf('docn')
 
-   !--------------------
-   ! ADVANCE OCN
-   !--------------------
+    !--- defaults, copy all fields from streams to o2x ---
 
-   call t_barrierf('docn_BARRIER',mpicom)
-   call t_startf('docn')
+    if (trim(ocn_mode) /= 'NULL') then
 
-   !--- defaults, copy all fields from streams to o2x ---
+       !--- defaults ---
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-   if (trim(ocn_mode) /= 'NULL') then
+       !--- copy streams to o2x ---
+       call t_startf('docn_strdata_advance')
+       call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
+       call t_stopf('docn_strdata_advance')
+       call t_barrierf('docn_scatter_BARRIER',mpicom)
+       call t_startf('docn_scatter')
+       do n = 1,SDOCN%nstreams
+          call shr_dmodel_translateAV(SDOCN%avs(n),o2x,avifld,avofld,rearr)
+       enddo
+       call t_stopf('docn_scatter')
+    else
+       call mct_aVect_zero(o2x)
+    endif
 
-      !--- defaults ---
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
+    call t_startf('docn_mode')
 
-      !--- copy streams to o2x ---
-      call t_startf('docn_strdata_advance')
-      call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
-      call t_stopf('docn_strdata_advance')
-      call t_barrierf('docn_scatter_BARRIER',mpicom)
-      call t_startf('docn_scatter')
-      do n = 1,SDOCN%nstreams
-         call shr_dmodel_translateAV(SDOCN%avs(n),o2x,avifld,avofld,rearr)
-      enddo
-      call t_stopf('docn_scatter')
-   else
-      call mct_aVect_zero(o2x)
-   endif
+    select case (trim(ocn_mode))
 
-   call t_startf('docn_mode')
+    case('COPYALL') 
+       ! do nothing extra
 
-   select case (trim(ocn_mode))
+    case('SSTDATA')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-   case('COPYALL') 
-      ! do nothing extra
+    case('IAF')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-   case('SSTDATA')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
+    case('SOM')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,SDOCN%nstreams
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+       enddo
+       if (firstcall) then
+          do n = 1,lsize
+             if (.not. read_restart) then
+                somtp(n) = o2x%rAttr(kt,n) + TkFrz
+             endif
+             o2x%rAttr(kt,n) = somtp(n)
+             o2x%rAttr(kq,n) = 0.0_R8
+          enddo
+       else   ! firstcall
+          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+          do n = 1,lsize
+             if (imask(n) /= 0) then
+                !--- pull out h from av for resuse below ---
+                hn = avstrm%rAttr(kh,n)
+                !--- compute new temp ---
+                o2x%rAttr(kt,n) = somtp(n) + &
+                     (x2o%rAttr(kswnet,n) + &  ! shortwave 
+                     x2o%rAttr(klwup ,n) + &  ! longwave
+                     x2o%rAttr(klwdn ,n) + &  ! longwave
+                     x2o%rAttr(ksen  ,n) + &  ! sensible
+                     x2o%rAttr(klat  ,n) + &  ! latent
+                     x2o%rAttr(kmelth,n) - &  ! ice melt
+                     avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
+                     (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
+                     dt/(cpsw*rhosw*hn)
+                !--- compute ice formed or melt potential ---
+                o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+                o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
+                somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
+             endif
+          enddo
+       endif   ! firstcall
 
-   case('IAF')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
+    end select
 
-   case('SOM')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,SDOCN%nstreams
-         call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
-      enddo
-      if (firstcall) then
-         do n = 1,lsize
-            if (.not. read_restart) then
-               somtp(n) = o2x%rAttr(kt,n) + TkFrz
-            endif
-            o2x%rAttr(kt,n) = somtp(n)
-            o2x%rAttr(kq,n) = 0.0_R8
-         enddo
-      else   ! firstcall
-         tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
-         do n = 1,lsize
-         if (imask(n) /= 0) then
-            !--- pull out h from av for resuse below ---
-            hn = avstrm%rAttr(kh,n)
-            !--- compute new temp ---
-            o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave 
-                x2o%rAttr(klwup ,n) + &  ! longwave
-                x2o%rAttr(klwdn ,n) + &  ! longwave
-                x2o%rAttr(ksen  ,n) + &  ! sensible
-                x2o%rAttr(klat  ,n) + &  ! latent
-                x2o%rAttr(kmelth,n) - &  ! ice melt
-                avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
-                dt/(cpsw*rhosw*hn)
-             !--- compute ice formed or melt potential ---
-            o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
-            o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
-            somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
-         endif
-         enddo
-      endif   ! firstcall
+    call t_stopf('docn_mode')
 
-   end select
+    if (write_restart) then
+       call t_startf('docn_restart')
+       call seq_infodata_GetData( infodata, case_name=case_name)
+       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       if (trim(ocn_mode) == 'SOM') then
+          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+          call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
+               rf1=somtp,rf1n='somtp')
+       endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       call shr_strdata_restWrite(trim(rest_file_strm),SDOCN,mpicom,trim(case_name),'SDOCN strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('docn_restart')
+    endif
 
-   call t_stopf('docn_mode')
+    call t_stopf('docn')
 
-   if (write_restart) then
-      call t_startf('docn_restart')
-      call seq_infodata_GetData( infodata, case_name=case_name)
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
-      if (my_task == master_task) then
-         nu = shr_file_getUnit()
-         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-         write(nu,'(a)') rest_file
-         write(nu,'(a)') rest_file_strm
-         close(nu)
-         call shr_file_freeUnit(nu)
-      endif
-      if (trim(ocn_mode) == 'SOM') then
-         if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
-         call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
-            rf1=somtp,rf1n='somtp')
-      endif
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
-      call shr_strdata_restWrite(trim(rest_file_strm),SDOCN,mpicom,trim(case_name),'SDOCN strdata')
-      call shr_sys_flush(logunit)
-      call t_stopf('docn_restart')
-   endif
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
 
-   call t_stopf('docn')
+    call t_startf('docn_run2')
+    if (my_task == master_task) then
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
+    end if
+    firstcall = .false.
 
-   !----------------------------------------------------------------------------
-   ! Log output for model date
-   ! Reset shr logging to original values
-   !----------------------------------------------------------------------------
+    call shr_file_setLogUnit (shrlogunit)
+    call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
+    call t_stopf('docn_run2')
 
-   call t_startf('docn_run2')
-   if (my_task == master_task) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
-   end if
-   firstcall = .false.
-      
-   call shr_file_setLogUnit (shrlogunit)
-   call shr_file_setLogLevel(shrloglev)
-   call shr_sys_flush(logunit)
-   call t_stopf('docn_run2')
+    call t_stopf('DOCN_RUN')
 
-   call t_stopf('DOCN_RUN')
+  end subroutine docn_comp_run
 
-end subroutine docn_comp_run
+  !===============================================================================
+  subroutine docn_comp_final()
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_final
-!
-! !DESCRIPTION:
-!     finalize method for dead ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-!
-subroutine docn_comp_final()
+    implicit none
 
-   implicit none
+    ! !DESCRIPTION: finalize method for dead ocn model
 
-!EOP
+    !--- formats ---
+    character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(docn_comp_final) "
+    integer :: rcode
+    !-------------------------------------------------------------------------------
 
-   !--- formats ---
-   character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
-   character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
-   character(*), parameter :: subName = "(docn_comp_final) "
-   integer :: rcode
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+    call t_startf('DOCN_FINAL')
+    if (my_task == master_task) then
+       write(logunit,F91) 
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91) 
+    end if
 
-   call t_startf('DOCN_FINAL')
-   if (my_task == master_task) then
-      write(logunit,F91) 
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
-   end if
-      
-   call t_stopf('DOCN_FINAL')
+    call t_stopf('DOCN_FINAL')
 
-end subroutine docn_comp_final
-!===============================================================================
-!===============================================================================
+  end subroutine docn_comp_final
 
+  !===============================================================================
+  subroutine avfld_add(avofld, avifld, size, count_only, docn_fld, driver_fld)
+    character(len=*), intent(inout) :: avofld(:)
+    character(len=*), intent(inout) :: avifld(:)
+    integer         , intent(inout) :: size
+    logical         , intent(in)    :: count_only
+    character(len=*), intent(in)    :: docn_fld
+    character(len=*), intent(in)    :: driver_fld
+    
+    size = size + 1
+    if (count_only) then
+       return
+    else
+       avifld(size) = trim(docn_fld)
+       avofld(size) = trim(driver_fld)
+    end if
+  end subroutine avfld_add
 
 end module docn_comp_mod

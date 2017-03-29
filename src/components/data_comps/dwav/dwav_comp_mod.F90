@@ -1,6 +1,9 @@
+#ifdef AIX
+@PROCESS ALIAS_SIZE(805306368)
+#endif
 module dwav_comp_mod
 
-! !USES:
+  ! !USES:
 
   use shr_const_mod
   use shr_sys_mod
@@ -22,83 +25,84 @@ module dwav_comp_mod
   use seq_infodata_mod
   use seq_timemgr_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_flds_mod     , only: seq_flds_w2x_fields, &
-                               seq_flds_x2w_fields
+  use seq_flds_mod     , only: seq_flds_w2x_fields, seq_flds_x2w_fields
 
-!
-! !PUBLIC TYPES:
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: dwav_comp_init
   public :: dwav_comp_run
   public :: dwav_comp_final
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   type(iosystem_desc_t), pointer :: iosystem
-  character(CS) :: myModelName = 'wav'   ! user defined model name
-  integer(IN)   :: mpicom
-  integer(IN)   :: my_task               ! my task in mpi communicator mpicom
-  integer(IN)   :: npes                  ! total number of tasks
-  integer(IN),parameter :: master_task=0 ! task number of master task
-  integer(IN)   :: logunit               ! logging unit number
-  integer       :: inst_index            ! number of current instance (ie. 1)
-  character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance
-                                         ! (ie. "_0001" or "")
-
-  character(CL) :: wav_mode              ! mode
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
-  logical       :: read_restart          ! start from restart
+  character(CS)     :: myModelName = 'wav' ! user defined model name
+  character(CL)     :: wav_mode            ! mode
+  integer(IN)       :: mpicom
+  integer(IN)       :: my_task             ! my task in mpi communicator mpicom
+  integer(IN)       :: npes                ! total number of tasks
+  integer(IN)       :: logunit             ! logging unit number
+  integer           :: inst_index          ! number of current instance (ie. 1)
+  character(len=16) :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+  character(len=16) :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
+  integer(IN)       :: dbug = 0            ! debug level (higher is more)
+  logical           :: read_restart        ! start from restart
 
   character(len=*),parameter :: rpfile = 'rpointer.wav'
   character(len=*),parameter :: nullstr = 'undefined'
+  integer(IN)     ,parameter :: master_task=0 ! task number of master task
 
-  type(shr_strdata_type) :: SDWAV
-  type(mct_rearr) :: rearr
-
-  integer(IN),parameter :: ktrans = 3
-  character(12),parameter  :: avifld(1:ktrans) = &
-     (/"lamult      ","ustokes     ","vstokes     "/)
-  character(12),parameter  :: avofld(1:ktrans) = &
-     (/"Sw_lamult   ","Sw_ustokes  ","Sw_vstokes  "/)
+  type(shr_strdata_type)     :: SDWAV
+  type(mct_rearr)            :: rearr
+  integer(IN)                :: ktrans 
+  character(12), allocatable :: avifld(:)
+  character(12), allocatable :: avofld(:)
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dwav_comp_init
-!
-! !DESCRIPTION:
-!     initialize data wav model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  subroutine avfld_set(count_only)
+    logical, intent(in) :: count_only
 
+    integer(IN):: index ! temporary
+
+    index = 0
+    call avfld_add(avifld, avofld, index, count_only, dwav_fld="lamult" ,  driver_fld="Sw_lamult" )
+    call avfld_add(avifld, avofld, index, count_only, dwav_fld="ustokes",  driver_fld="Sw_ustokes")
+    call avfld_add(avifld, avofld, index, count_only, dwav_fld="vstoks" ,  driver_fld="Sw_vstokes")
+
+    if (count_only) then
+       allocate(avifld(index))
+       allocate(avofld(index))
+       ktrans = index
+    end if
+
+  end subroutine avfld_set
+
+  !===============================================================================
   subroutine dwav_comp_init( EClock, cdata, x2w, w2x, NLFilename )
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !DESCRIPTION: initialize data wav model
+
+    ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock)            , intent(in)    :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2w, w2x
     character(len=*), optional  , intent(in)    :: NLFilename
-
-!EOP
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -152,7 +156,7 @@ CONTAINS
     character(*), parameter :: F91   = "('(dwav_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dwav_comp_init) "
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_INIT')
 
@@ -247,12 +251,12 @@ CONTAINS
     ! check that we know how to handle the mode
 
     if (trim(wav_mode) == 'null' .or. &
-        trim(wav_mode) == 'copyall') then
-      if (my_task == master_task) &
-         write(logunit,F00) ' wav mode = ',trim(wav_mode)
+         trim(wav_mode) == 'copyall') then
+       if (my_task == master_task) &
+            write(logunit,F00) ' wav mode = ',trim(wav_mode)
     else
-      write(logunit,F00) ' ERROR illegal wav mode = ',trim(wav_mode)
-      call shr_sys_abort()
+       write(logunit,F00) ' ERROR illegal wav mode = ',trim(wav_mode)
+       call shr_sys_abort()
     endif
 
     call t_stopf('dwav_readnml')
@@ -272,7 +276,7 @@ CONTAINS
        call shr_strdata_pioinit(SDWAV, iosystem, shr_pio_getiotype(trim(inst_name)))
 
        call shr_strdata_init(SDWAV,mpicom,compid,name='wav', &
-                      calendar=calendar)
+            calendar=calendar)
     endif
 
     if (my_task == master_task) then
@@ -351,7 +355,7 @@ CONTAINS
 
     if (read_restart) then
        if (trim(rest_file) == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
@@ -409,212 +413,204 @@ CONTAINS
 
     call t_stopf('DWAV_INIT')
 
-end subroutine dwav_comp_init
+  end subroutine dwav_comp_init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dwav_comp_run
-!
-! !DESCRIPTION:
-!     run method for data wav model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
 
-subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
+    implicit none
 
-   implicit none
+    ! !DESCRIPTION: run method for data wav model
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(ESMF_Clock)            ,intent(in)    :: EClock
-   type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2w
-   type(mct_aVect)             ,intent(inout) :: w2x
+    type(ESMF_Clock)            ,intent(in)    :: EClock
+    type(seq_cdata)             ,intent(inout) :: cdata
+    type(mct_aVect)             ,intent(inout) :: x2w
+    type(mct_aVect)             ,intent(inout) :: w2x
 
-!EOP
+    !--- local ---
+    type(mct_gsMap)        , pointer :: gsmap
+    type(mct_gGrid)        , pointer :: ggrid
 
-   !--- local ---
-   type(mct_gsMap)        , pointer :: gsmap
-   type(mct_gGrid)        , pointer :: ggrid
+    integer(IN)   :: CurrentYMD        ! model date
+    integer(IN)   :: CurrentTOD        ! model sec into model date
+    integer(IN)   :: yy,mm,dd          ! year month day
+    integer(IN)   :: n                 ! indices
+    integer(IN)   :: nf                ! fields loop index
+    integer(IN)   :: nl                ! ocn frac index
+    integer(IN)   :: lsize           ! size of attr vect
+    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
+    !   logical       :: glcrun_alarm      ! is glc going to run now
+    logical       :: newdata           ! has newdata been read
+    logical       :: mssrmlf           ! remove old data
+    integer(IN)   :: idt               ! integer timestep
+    real(R8)      :: dt                ! timestep
+    !   real(R8)      :: hn                ! h field
+    logical       :: write_restart     ! restart now
+    character(CL) :: case_name         ! case name
+    character(CL) :: rest_file         ! restart_file
+    character(CL) :: rest_file_strm    ! restart_file for stream
+    integer(IN)   :: nu                ! unit number
+    integer(IN)   :: nflds_x2w
+    type(seq_infodata_type), pointer :: infodata
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! ocn frac index
-   integer(IN)   :: lsize           ! size of attr vect
-   integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-!   logical       :: glcrun_alarm      ! is glc going to run now
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   integer(IN)   :: idt               ! integer timestep
-   real(R8)      :: dt                ! timestep
-!   real(R8)      :: hn                ! h field
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm    ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
-   integer(IN)   :: nflds_x2w
-   type(seq_infodata_type), pointer :: infodata
+    character(*), parameter :: F00   = "('(dwav_comp_run) ',8a)"
+    character(*), parameter :: F04   = "('(dwav_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: subName = "(dwav_comp_run) "
+    !-------------------------------------------------------------------------------
 
-   character(*), parameter :: F00   = "('(dwav_comp_run) ',8a)"
-   character(*), parameter :: F04   = "('(dwav_comp_run) ',2a,2i8,'s')"
-   character(*), parameter :: subName = "(dwav_comp_run) "
-!-------------------------------------------------------------------------------
+    call t_startf('DWAV_RUN')
 
-   call t_startf('DWAV_RUN')
+    call t_startf('dwav_run1')
 
-   call t_startf('dwav_run1')
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to my log file
+    !----------------------------------------------------------------------------
+    call shr_file_getLogUnit (shrlogunit)
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (logUnit)
 
-  !----------------------------------------------------------------------------
-  ! Reset shr logging to my log file
-  !----------------------------------------------------------------------------
-   call shr_file_getLogUnit (shrlogunit)
-   call shr_file_getLogLevel(shrloglev)
-   call shr_file_setLogUnit (logUnit)
+    call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid, infodata=infodata)
 
-   call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid, infodata=infodata)
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    call seq_timemgr_EClockGetData( EClock, dtime=idt)
+    dt = idt * 1.0_r8
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
-   call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-   call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-   call seq_timemgr_EClockGetData( EClock, dtime=idt)
-   dt = idt * 1.0_r8
-   write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    call t_stopf('dwav_run1')
 
-   call t_stopf('dwav_run1')
+    !--------------------
+    ! UNPACK
+    !--------------------
 
-   !--------------------
-   ! UNPACK
-   !--------------------
+    call t_startf('dwav_unpack')
 
-   call t_startf('dwav_unpack')
+    !  lsize = mct_avect_lsize(x2o)
+    !  nflds_x2o = mct_avect_nRattr(x2o)
 
-!  lsize = mct_avect_lsize(x2o)
-!  nflds_x2o = mct_avect_nRattr(x2o)
+    !   do nf=1,nflds_x2o
+    !   do n=1,lsize
+    !     ?? = x2o%rAttr(nf,n)
+    !   enddo
+    !   enddo
 
-!   do nf=1,nflds_x2o
-!   do n=1,lsize
-!     ?? = x2o%rAttr(nf,n)
-!   enddo
-!   enddo
+    call t_stopf('dwav_unpack')
 
-   call t_stopf('dwav_unpack')
+    !--------------------
+    ! ADVANCE WAV
+    !--------------------
 
-   !--------------------
-   ! ADVANCE WAV
-   !--------------------
+    call t_barrierf('dwav_BARRIER',mpicom)
+    call t_startf('dwav')
 
-   call t_barrierf('dwav_BARRIER',mpicom)
-   call t_startf('dwav')
+    !--- copy all fields from streams to w2x as default ---
 
-   !--- copy all fields from streams to w2x as default ---
+    if (trim(wav_mode) /= 'null') then
+       call t_startf('dwav_strdata_advance')
+       call shr_strdata_advance(SDWAV,currentYMD,currentTOD,mpicom,'dwav')
+       call t_stopf('dwav_strdata_advance')
+       call t_barrierf('dwav_scatter_BARRIER',mpicom)
+       call t_startf('dwav_scatter')
+       do n = 1,SDWAV%nstreams
+          call shr_dmodel_translateAV(SDWAV%avs(n),w2x,avifld,avofld,rearr)
+       enddo
+       call t_stopf('dwav_scatter')
+    else
+       call mct_aVect_zero(w2x)
+    endif
 
-   if (trim(wav_mode) /= 'null') then
-      call t_startf('dwav_strdata_advance')
-      call shr_strdata_advance(SDWAV,currentYMD,currentTOD,mpicom,'dwav')
-      call t_stopf('dwav_strdata_advance')
-      call t_barrierf('dwav_scatter_BARRIER',mpicom)
-      call t_startf('dwav_scatter')
-      do n = 1,SDWAV%nstreams
-         call shr_dmodel_translateAV(SDWAV%avs(n),w2x,avifld,avofld,rearr)
-      enddo
-      call t_stopf('dwav_scatter')
-   else
-      call mct_aVect_zero(w2x)
-   endif
+    call t_startf('dwav_mode')
 
-   call t_startf('dwav_mode')
+    call t_stopf('dwav_mode')
 
-   call t_stopf('dwav_mode')
+    if (write_restart) then
+       call t_startf('dwav_restart')
+       call seq_infodata_GetData( infodata, case_name=case_name)
+       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dwav'//trim(inst_suffix)//'.r.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.dwav'//trim(inst_suffix)//'.rs1.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       call shr_strdata_restWrite(trim(rest_file_strm),SDWAV,mpicom,trim(case_name),'SDWAV strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('dwav_restart')
+    endif
 
-   if (write_restart) then
-      call t_startf('dwav_restart')
-      call seq_infodata_GetData( infodata, case_name=case_name)
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dwav'//trim(inst_suffix)//'.r.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.dwav'//trim(inst_suffix)//'.rs1.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
-      if (my_task == master_task) then
-         nu = shr_file_getUnit()
-         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-         write(nu,'(a)') rest_file
-         write(nu,'(a)') rest_file_strm
-         close(nu)
-         call shr_file_freeUnit(nu)
-      endif
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
-      call shr_strdata_restWrite(trim(rest_file_strm),SDWAV,mpicom,trim(case_name),'SDWAV strdata')
-      call shr_sys_flush(logunit)
-      call t_stopf('dwav_restart')
-   endif
+    call t_stopf('dwav')
 
-   call t_stopf('dwav')
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
 
-   !----------------------------------------------------------------------------
-   ! Log output for model date
-   ! Reset shr logging to original values
-   !----------------------------------------------------------------------------
+    call t_startf('dwav_run2')
+    if (my_task == master_task) then
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
+    end if
 
-   call t_startf('dwav_run2')
-   if (my_task == master_task) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
-   end if
+    call shr_file_setLogUnit (shrlogunit)
+    call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
+    call t_stopf('dwav_run2')
 
-   call shr_file_setLogUnit (shrlogunit)
-   call shr_file_setLogLevel(shrloglev)
-   call shr_sys_flush(logunit)
-   call t_stopf('dwav_run2')
+    call t_stopf('DWAV_RUN')
 
-   call t_stopf('DWAV_RUN')
+  end subroutine dwav_comp_run
 
-end subroutine dwav_comp_run
+  !===============================================================================
+  subroutine dwav_comp_final()
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: dwav_comp_final
-!
-! !DESCRIPTION:
-!     finalize method data wav model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-!
-subroutine dwav_comp_final()
+    implicit none
 
-   implicit none
+    ! !DESCRIPTION: finalize method data wav model
 
-!EOP
+    !--- formats ---
+    character(*), parameter :: F00   = "('(dwav_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dwav_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(dwav_comp_final) "
+    integer :: rcode
+    !-------------------------------------------------------------------------------
 
-   !--- formats ---
-   character(*), parameter :: F00   = "('(dwav_comp_final) ',8a)"
-   character(*), parameter :: F91   = "('(dwav_comp_final) ',73('-'))"
-   character(*), parameter :: subName = "(dwav_comp_final) "
-   integer :: rcode
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+    call t_startf('DWAV_FINAL')
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
 
-   call t_startf('DWAV_FINAL')
-   if (my_task == master_task) then
-      write(logunit,F91)
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91)
-   end if
+    call t_stopf('DWAV_FINAL')
 
-   call t_stopf('DWAV_FINAL')
+  end subroutine dwav_comp_final
 
- end subroutine dwav_comp_final
-
-!===============================================================================
+  !===============================================================================
+  subroutine avfld_add(avofld, avifld, size, count_only, dwav_fld, driver_fld)
+    character(len=*), intent(inout) :: avofld(:)
+    character(len=*), intent(inout) :: avifld(:)
+    integer         , intent(inout) :: size
+    logical         , intent(in)    :: count_only
+    character(len=*), intent(in)    :: dwav_fld
+    character(len=*), intent(in)    :: driver_fld
+    
+    size = size + 1
+    if (count_only) then
+       return
+    else
+       avifld(size) = trim(dwav_fld)
+       avofld(size) = trim(driver_fld)
+    end if
+  end subroutine avfld_add
 
 end module dwav_comp_mod
