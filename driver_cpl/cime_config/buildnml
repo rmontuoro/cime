@@ -91,7 +91,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     if basedt < 0:
         expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
 
-    comps = ["atm", "lnd", "ice", "ocn", "glc", "rof", "wav", ]
+    comps = ["atm", "lnd", "ice", "ocn", "glc", "rof", "wav"]
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         cpl_dt = basedt / int(ncpl)
