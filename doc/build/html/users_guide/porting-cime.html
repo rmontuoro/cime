@@ -263,14 +263,19 @@ These specify the arguments to the mpi executable and as a result are dependent 
 </div>
 <div class="section" id="customizing-the-batch-directives-for-your-machine">
 <span id="customizing-batch-file"></span><h3>2.2.2. Customizing the batch directives for your machine<a class="headerlink" href="#customizing-the-batch-directives-for-your-machine" title="Permalink to this headline">¶</a></h3>
-<div class="admonition-todo admonition" id="index-0">
-<p class="first admonition-title">Todo</p>
-<p class="last">Jim Edwards add the contents of this section</p>
-</div>
+<p>The <strong>config_batch.xml</strong> schema is defined in <code class="docutils literal"><span class="pre">$CIMEROOT/config/xml_schemas/config_batch.xml</span></code>
+config batch currently supports batch systems: pbs, cobalt, lsf and slurm.
+General configurations for each system are provided at the top of the file and specific modifications for a
+given machine are provided below.  In particular each machine should define its own queues.   Following
+machine specific queue details is a batch_jobs section, this section of the file describes each job that will
+be submitted to the queue for a CIME workflow, the template file that will be used to generate that job and
+the prerequisets that must be met before the job is submitted and dependancies that must be satisfied
+before that job is run.   By default the CIME workflow consists of three jobs (case.run, case.st_archive, and
+case.lt_archive) there is also a case.test file that is used by the CIME system test workflow.</p>
 </div>
 <div class="section" id="customize-the-compiler-options-for-your-machine">
 <span id="customizing-compiler-file"></span><h3>2.2.3. Customize the compiler options for your machine<a class="headerlink" href="#customize-the-compiler-options-for-your-machine" title="Permalink to this headline">¶</a></h3>
-<div class="admonition-todo admonition" id="index-1">
+<div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <p class="last">Jim Edwards add the contents of this section</p>
 </div>
@@ -351,7 +356,7 @@ Model output data for these runs will be available on the <a class="reference ex
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
     </div>
   </body>
 </html>
