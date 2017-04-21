@@ -28,6 +28,7 @@
     <script type="text/javascript" src="../_static/bizstyle.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1. Fortran Unit Testing" href="unit_testing.html" />
     <link rel="prev" title="1. Introduction" href="../build_cpl/introduction.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
@@ -41,6 +42,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="unit_testing.html" title="1. Fortran Unit Testing"
+             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../build_cpl/introduction.html" title="1. Introduction"
              accesskey="P">previous</a> |</li>
@@ -60,6 +64,9 @@
   <h4>Previous topic</h4>
   <p class="topless"><a href="../build_cpl/introduction.html"
                         title="previous chapter">1. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="unit_testing.html"
+                        title="next chapter">1. Fortran Unit Testing</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -87,13 +94,42 @@
             
   <span class="target" id="misc-tools"></span><div class="section" id="miscellaneous-tools">
 <h1>Miscellaneous Tools<a class="headerlink" href="#miscellaneous-tools" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-</div>
 <p>In addition to basic infrastructure for a coupled model, CIME contains in its distribution several stand-alone
 tools that are necessary and/or useful when building a climate model.  Guides for using them will be here.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="unit_testing.html">1. Fortran Unit Testing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#introduction">1.1. Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#what-is-a-unit-test">1.1.1. What is a unit test?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#overview-of-unit-test-support-in-cime">1.1.2. Overview of unit test support in CIME</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#running-cime-s-fortran-unit-tests">1.2. Running CIME&#8217;s Fortran unit tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#how-to-add-unit-testing-support-on-your-machine">1.3. How to add unit testing support on your machine</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#building-pfunit">1.3.1. Building pFUnit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#adding-to-the-xml-file">1.3.2. Adding to the xml file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#how-to-write-a-new-unit-test">1.4. How to write a new unit test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#more-details-on-writing-your-own-unit-tests">1.5. More details on writing your own unit tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#general-guidelines-for-writing-unit-tests">1.5.1. General guidelines for writing unit tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#defining-a-test-class-in-order-to-define-setup-and-teardown-methods">1.5.2. Defining a test class in order to define setUp and tearDown methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#more-on-test-teardown">1.5.3. More on test teardown</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#pfunit-documentation-and-examples">1.5.4. pFUnit documentation and examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="unit_testing.html#finding-more-documentation-and-examples-in-cime">1.6. Finding more documentation and examples in CIME</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#documentation-of-the-unit-test-build-system">1.6.1. Documentation of the unit test build system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_testing.html#finding-more-detailed-examples">1.6.2. Finding more detailed examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Other sections that will be added later:</p>
 <p>Statistical Ensemble Test</p>
 <p>Mapping Tools</p>
-<p>Unit Testing</p>
 <p>cprnc</p>
 <p>load-balancing-tool</p>
 <div class="section" id="indices-and-tables">
@@ -118,6 +154,9 @@ tools that are necessary and/or useful when building a climate model.  Guides fo
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="unit_testing.html" title="1. Fortran Unit Testing"
+             >next</a> |</li>
         <li class="right" >
           <a href="../build_cpl/introduction.html" title="1. Introduction"
              >previous</a> |</li>
