@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1. Fortran Unit Testing &#8212; on  documentation</title>
+    <title>5. Fortran Unit Testing &#8212; on  documentation</title>
     
     <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -28,7 +28,8 @@
     <script type="text/javascript" src="../_static/bizstyle.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Miscellaneous Tools" href="index.html" />
+    <link rel="next" title="6. Multi-instance component functionality" href="multi-instance.html" />
+    <link rel="prev" title="4. Testing with create_test" href="testing.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
     <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
@@ -42,39 +43,43 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="index.html" title="Miscellaneous Tools"
+          <a href="multi-instance.html" title="6. Multi-instance component functionality"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="testing.html" title="4. Testing with create_test"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Miscellaneous Tools</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">1. Fortran Unit Testing</a><ul>
-<li><a class="reference internal" href="#introduction">1.1. Introduction</a><ul>
-<li><a class="reference internal" href="#what-is-a-unit-test">1.1.1. What is a unit test?</a></li>
-<li><a class="reference internal" href="#overview-of-unit-test-support-in-cime">1.1.2. Overview of unit test support in CIME</a></li>
+<li><a class="reference internal" href="#">5. Fortran Unit Testing</a><ul>
+<li><a class="reference internal" href="#introduction">5.1. Introduction</a><ul>
+<li><a class="reference internal" href="#what-is-a-unit-test">5.1.1. What is a unit test?</a></li>
+<li><a class="reference internal" href="#overview-of-unit-test-support-in-cime">5.1.2. Overview of unit test support in CIME</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-cime-s-fortran-unit-tests">1.2. Running CIME&#8217;s Fortran unit tests</a></li>
-<li><a class="reference internal" href="#how-to-add-unit-testing-support-on-your-machine">1.3. How to add unit testing support on your machine</a><ul>
-<li><a class="reference internal" href="#building-pfunit">1.3.1. Building pFUnit</a></li>
-<li><a class="reference internal" href="#adding-to-the-xml-file">1.3.2. Adding to the xml file</a></li>
+<li><a class="reference internal" href="#running-cime-s-fortran-unit-tests">5.2. Running CIME&#8217;s Fortran unit tests</a></li>
+<li><a class="reference internal" href="#how-to-add-unit-testing-support-on-your-machine">5.3. How to add unit testing support on your machine</a><ul>
+<li><a class="reference internal" href="#building-pfunit">5.3.1. Building pFUnit</a></li>
+<li><a class="reference internal" href="#adding-to-the-xml-file">5.3.2. Adding to the xml file</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-to-write-a-new-unit-test">1.4. How to write a new unit test</a></li>
-<li><a class="reference internal" href="#more-details-on-writing-your-own-unit-tests">1.5. More details on writing your own unit tests</a><ul>
-<li><a class="reference internal" href="#general-guidelines-for-writing-unit-tests">1.5.1. General guidelines for writing unit tests</a></li>
-<li><a class="reference internal" href="#defining-a-test-class-in-order-to-define-setup-and-teardown-methods">1.5.2. Defining a test class in order to define setUp and tearDown methods</a></li>
-<li><a class="reference internal" href="#more-on-test-teardown">1.5.3. More on test teardown</a></li>
-<li><a class="reference internal" href="#pfunit-documentation-and-examples">1.5.4. pFUnit documentation and examples</a></li>
+<li><a class="reference internal" href="#how-to-write-a-new-unit-test">5.4. How to write a new unit test</a></li>
+<li><a class="reference internal" href="#general-guidelines-for-writing-unit-tests">5.5. General guidelines for writing unit tests</a></li>
+<li><a class="reference internal" href="#more-details-on-writing-pfunit-based-unit-tests">5.6. More details on writing pFUnit-based unit tests</a><ul>
+<li><a class="reference internal" href="#assertion-methods">5.6.1. Assertion methods</a></li>
+<li><a class="reference internal" href="#defining-a-test-class-in-order-to-define-setup-and-teardown-methods">5.6.2. Defining a test class in order to define setUp and tearDown methods</a></li>
+<li><a class="reference internal" href="#more-on-test-teardown">5.6.3. More on test teardown</a></li>
+<li><a class="reference internal" href="#pfunit-documentation-and-examples">5.6.4. pFUnit documentation and examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#finding-more-documentation-and-examples-in-cime">1.6. Finding more documentation and examples in CIME</a><ul>
-<li><a class="reference internal" href="#documentation-of-the-unit-test-build-system">1.6.1. Documentation of the unit test build system</a></li>
-<li><a class="reference internal" href="#finding-more-detailed-examples">1.6.2. Finding more detailed examples</a></li>
+<li><a class="reference internal" href="#finding-more-documentation-and-examples-in-cime">5.7. Finding more documentation and examples in CIME</a><ul>
+<li><a class="reference internal" href="#documentation-of-the-unit-test-build-system">5.7.1. Documentation of the unit test build system</a></li>
+<li><a class="reference internal" href="#finding-more-detailed-examples">5.7.2. Finding more detailed examples</a></li>
 </ul>
 </li>
 </ul>
@@ -82,12 +87,15 @@
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Miscellaneous Tools</a></p>
+  <p class="topless"><a href="testing.html"
+                        title="previous chapter">4. Testing with create_test</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="multi-instance.html"
+                        title="next chapter">6. Multi-instance component functionality</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/misc_tools/unit_testing.rst.txt"
+      <li><a href="../_sources/users_guide/unit_testing.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -110,46 +118,46 @@
           <div class="body" role="main">
             
   <div class="section" id="fortran-unit-testing">
-<span id="unit-testing"></span><h1>1. Fortran Unit Testing<a class="headerlink" href="#fortran-unit-testing" title="Permalink to this headline">¶</a></h1>
+<span id="unit-testing"></span><h1>5. Fortran Unit Testing<a class="headerlink" href="#fortran-unit-testing" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
-<h2>1.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<h2>5.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="what-is-a-unit-test">
-<h3>1.1.1. What is a unit test?<a class="headerlink" href="#what-is-a-unit-test" title="Permalink to this headline">¶</a></h3>
+<h3>5.1.1. What is a unit test?<a class="headerlink" href="#what-is-a-unit-test" title="Permalink to this headline">¶</a></h3>
 <p>A unit test is a fast, self-verying test of a small piece of code.
 A single unit test typically covers 10s to 100s of lines of code (e.g., a single function or small module).
 It typically runs in just milliseconds, and produces a simple pass/fail result.</p>
 <p>Unit tests:</p>
 <ul class="simple">
-<li>Ensure that code remains correct as it is modified (in this respect, they complement the CIME system tests; the remaining bullet points are unique to unit tests)</li>
-<li>Ensure that new code is correct</li>
-<li>Can help guide development, via test-driven development (TDD)</li>
-<li>Provide executable documentation of the intended behavior of a piece of code</li>
-<li>Support development on your desktop machine</li>
+<li>Ensure that code remains correct as it is modified (in this respect, they complement the CIME system tests; the remaining bullet points are unique to unit tests).</li>
+<li>Ensure that new code is correct.</li>
+<li>Can help guide development, via test-driven development (TDD).</li>
+<li>Provide executable documentation of the intended behavior of a piece of code.</li>
+<li>Support development on your desktop machine.</li>
 </ul>
 </div>
 <div class="section" id="overview-of-unit-test-support-in-cime">
-<h3>1.1.2. Overview of unit test support in CIME<a class="headerlink" href="#overview-of-unit-test-support-in-cime" title="Permalink to this headline">¶</a></h3>
+<h3>5.1.2. Overview of unit test support in CIME<a class="headerlink" href="#overview-of-unit-test-support-in-cime" title="Permalink to this headline">¶</a></h3>
 <p>CIME comes with a set of tools to support building and running unit tests.
 These consist of:</p>
 <ol class="arabic simple">
-<li>CMake tools to support building and running tests via CMake and CTest</li>
+<li>CMake tools to support building and running tests via CMake and CTest.</li>
 <li>A python script that provides a simple front-end to the CMake-based tests.</li>
 </ol>
-<p>The Fortran unit tests use pFUnit (<a class="reference external" href="https://sourceforge.net/projects/pfunit/">https://sourceforge.net/projects/pfunit/</a>), which is a Fortran unit testing framework that follows conventions of other xUnit frameworks (JUnit, etc.).</p>
+<p>The Fortran unit tests use <a class="reference external" href="https://sourceforge.net/projects/pfunit/">pFUnit</a>, which is a Fortran unit testing framework that follows conventions of other xUnit frameworks (JUnit, etc.).</p>
 </div>
 </div>
 <div class="section" id="running-cime-s-fortran-unit-tests">
-<span id="running-unit-tests"></span><h2>1.2. Running CIME&#8217;s Fortran unit tests<a class="headerlink" href="#running-cime-s-fortran-unit-tests" title="Permalink to this headline">¶</a></h2>
+<span id="running-unit-tests"></span><h2>5.2. Running CIME&#8217;s Fortran unit tests<a class="headerlink" href="#running-cime-s-fortran-unit-tests" title="Permalink to this headline">¶</a></h2>
 <p>These instructions assume that you are using a machine that already has pFUnit installed, along with the necessary support in CIME.
 If that is not the case, then see the section <a class="reference internal" href="#adding-machine-support"><span class="std std-ref">How to add unit testing support on your machine</span></a>.</p>
 <p>From the top-level cime directory, you can run all of CIME&#8217;s Fortran unit tests simply by running:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>tools/unit_testing/run_tests.py --build-dir MY_BUILD_DIR
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; tools/unit_testing/run_tests.py --build-dir MY_BUILD_DIR
 </pre></div>
 </div>
 <p>where you can replace <code class="docutils literal"><span class="pre">MY_BUILD_DIR</span></code> with a path to the directory where you would like the unit test build files to be placed.
 Once you have built the unit tests once (whether the build was successful or not), you can reuse the same build directory later to speed up the rebuild.
 There are a number of useful arguments to <code class="docutils literal"><span class="pre">run_tests.py</span></code>; for full usage information, run:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>tools/unit_testing/run_tests.py -h
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; tools/unit_testing/run_tests.py -h
 </pre></div>
 </div>
 <p>If the build is successful, then you should get a message that looks like this:</p>
@@ -175,8 +183,8 @@ Running CTest tests for __command_line_test__/__command_line_test__.
 <p>For machines that have a serial build of pFUnit available for the default compiler, these unit tests are run automatically as part of <code class="docutils literal"><span class="pre">scripts_regression_tests</span></code>.</p>
 </div>
 <div class="section" id="how-to-add-unit-testing-support-on-your-machine">
-<span id="adding-machine-support"></span><h2>1.3. How to add unit testing support on your machine<a class="headerlink" href="#how-to-add-unit-testing-support-on-your-machine" title="Permalink to this headline">¶</a></h2>
-<p>The below instructions assume that you have already ported CIME to your machine, by following the instructions in <a class="reference internal" href="../users_guide/porting-cime.html"><span class="doc">Porting and Validating CIME on a new Platform</span></a>.
+<span id="adding-machine-support"></span><h2>5.3. How to add unit testing support on your machine<a class="headerlink" href="#how-to-add-unit-testing-support-on-your-machine" title="Permalink to this headline">¶</a></h2>
+<p>The below instructions assume that you have already ported CIME to your machine, by following the instructions in <a class="reference internal" href="porting-cime.html"><span class="doc">Porting and Validating CIME on a new Platform</span></a>.
 Once you have done that, you can add unit testing support by building pFUnit on your machine and then pointing to the build in <code class="docutils literal"><span class="pre">config_compilers.xml</span></code>.</p>
 <p>At a minimum, you should do a serial build of pFUnit (without MPI or OpenMP), using the default compiler on your machine (according to <code class="docutils literal"><span class="pre">config_machines.xml</span></code>).
 That is the default used by <code class="docutils literal"><span class="pre">run_tests.py</span></code>, and is required for <code class="docutils literal"><span class="pre">scripts_regression_tests.py</span></code> to run the unit tests on your machine.
@@ -184,7 +192,7 @@ Optionally, you can also provide pFUnit builds with other supported compilers on
 If you&#8217;d like, you can also provide additional pFUnit builds with other combinations of MPI and OpenMP on or off.
 However, at this time, no unit tests require parallel support, so there is no benefit gained by providing MPI-enabled builds.</p>
 <div class="section" id="building-pfunit">
-<h3>1.3.1. Building pFUnit<a class="headerlink" href="#building-pfunit" title="Permalink to this headline">¶</a></h3>
+<h3>5.3.1. Building pFUnit<a class="headerlink" href="#building-pfunit" title="Permalink to this headline">¶</a></h3>
 <p>To perform a serial build of pFUnit, follow these instructions:</p>
 <ol class="arabic">
 <li><p class="first">Download pFUnit from <a class="reference external" href="https://sourceforge.net/projects/pfunit/">https://sourceforge.net/projects/pfunit/</a></p>
@@ -192,32 +200,32 @@ However, at this time, no unit tests require parallel support, so there is no be
 <li><p class="first">Set up your environment to be similar to the environment used in system builds of CIME.
 For example, load the appropriate compilers into your path.
 An easy way to achieve this is to run:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>cime/tools/configure --mpilib mpi-serial
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; <span class="nv">$CIMEROOT</span>/tools/configure --mpilib mpi-serial
 </pre></div>
 </div>
 <p>(with an optional <code class="docutils literal"><span class="pre">--compiler</span></code> argument; you&#8217;ll also want to change the <code class="docutils literal"><span class="pre">--mpilib</span></code> argument if you&#8217;re doing an MPI-enabled build).
 Then source either <code class="docutils literal"><span class="pre">./.env_mach_specific.sh</span></code> or <code class="docutils literal"><span class="pre">./.env_mach_specific.csh</span></code>, depending on your shell.</p>
 </li>
 <li><p class="first">For convenience, set the <code class="docutils literal"><span class="pre">PFUNIT</span></code> environment variable to point to the location where you want to install pFUnit. For example (in bash):</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>export PFUNIT=/glade/p/cesmdata/cseg/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; <span class="nb">export</span> <span class="nv">PFUNIT</span><span class="o">=</span>/glade/p/cesmdata/cseg/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP
 </pre></div>
 </div>
 </li>
 <li><p class="first">Configure and build pFUnit:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>mkdir build
-cd build
-cmake -DMPI=NO -DOPENMP=NO -DCMAKE_INSTALL_PREFIX=$PFUNIT ..
-make -j 4
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; mkdir build
+&gt; <span class="nb">cd</span> build
+&gt; cmake -DMPI<span class="o">=</span>NO -DOPENMP<span class="o">=</span>NO -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="nv">$PFUNIT</span> ..
+&gt; make -j <span class="m">4</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first">Run pFUnit&#8217;s self-tests:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>make tests
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; make tests
 </pre></div>
 </div>
 </li>
 <li><p class="first">Install pFUnit in the directory you specified earlier:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>make install
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; make install
 </pre></div>
 </div>
 </li>
@@ -226,7 +234,7 @@ make -j 4
 Make sure to choose a different installation directory for each of these, by setting the <code class="docutils literal"><span class="pre">PFUNIT</span></code> variable differently.</p>
 </div>
 <div class="section" id="adding-to-the-xml-file">
-<h3>1.3.2. Adding to the xml file<a class="headerlink" href="#adding-to-the-xml-file" title="Permalink to this headline">¶</a></h3>
+<h3>5.3.2. Adding to the xml file<a class="headerlink" href="#adding-to-the-xml-file" title="Permalink to this headline">¶</a></h3>
 <p>You then need to tell CIME about your pFUnit build(s).
 To do this, specify the appropriate path(s) using the <code class="docutils literal"><span class="pre">PFUNIT_PATH</span></code> element in <code class="docutils literal"><span class="pre">config_compilers.xml</span></code>.
 For a serial build, this will look like:</p>
@@ -240,14 +248,12 @@ For a serial build, this will look like:</p>
 </div>
 </div>
 <div class="section" id="how-to-write-a-new-unit-test">
-<h2>1.4. How to write a new unit test<a class="headerlink" href="#how-to-write-a-new-unit-test" title="Permalink to this headline">¶</a></h2>
+<h2>5.4. How to write a new unit test<a class="headerlink" href="#how-to-write-a-new-unit-test" title="Permalink to this headline">¶</a></h2>
 <p>TODO: Need to write this section.
 This will draw on some of the information in sections 3 and 4 of <a class="reference external" href="https://github.com/NCAR/cesm_unit_test_tutorial">https://github.com/NCAR/cesm_unit_test_tutorial</a> (though without the clm and cam stuff).</p>
 </div>
-<div class="section" id="more-details-on-writing-your-own-unit-tests">
-<h2>1.5. More details on writing your own unit tests<a class="headerlink" href="#more-details-on-writing-your-own-unit-tests" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="general-guidelines-for-writing-unit-tests">
-<h3>1.5.1. General guidelines for writing unit tests<a class="headerlink" href="#general-guidelines-for-writing-unit-tests" title="Permalink to this headline">¶</a></h3>
+<h2>5.5. General guidelines for writing unit tests<a class="headerlink" href="#general-guidelines-for-writing-unit-tests" title="Permalink to this headline">¶</a></h2>
 <p>Unit tests typically test a small piece of code (e.g., order 10 - 100 lines,
 such as a single function or small-ish class).</p>
 <p>Good unit tests are &#8220;FIRST&#8221;
@@ -307,6 +313,18 @@ teardown in the special tearDown routine, as discussed in the sections,</strong>
 <a class="reference internal" href="#defining-a-test-class-in-order-to-define-setup-and-teardown-methods">Defining a test class in order to define setUp and tearDown methods</a> and
 <a class="reference internal" href="#more-on-test-teardown">More on test teardown</a>.</li>
 </ol>
+<p>If you have many tests of the same subroutine, then you&#8217;ll often find quite a
+lot of duplication between the tests. It&#8217;s good practice to extract major areas
+of duplication to their own subroutines in the .pf file, which can be called by
+your tests. This aids the understandability and maintainability of your
+tests. pFUnit knows which subroutines are tests and which are &#8220;helper&#8221; routines
+because of the <code class="docutils literal"><span class="pre">&#64;Test</span></code> directives: You only add a <code class="docutils literal"><span class="pre">&#64;Test</span></code> directive for your
+tests, not for your helper routines.</p>
+</div>
+<div class="section" id="more-details-on-writing-pfunit-based-unit-tests">
+<h2>5.6. More details on writing pFUnit-based unit tests<a class="headerlink" href="#more-details-on-writing-pfunit-based-unit-tests" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="assertion-methods">
+<h3>5.6.1. Assertion methods<a class="headerlink" href="#assertion-methods" title="Permalink to this headline">¶</a></h3>
 <p>pFUnit provides many assertion methods that you can use in the Verify step. Some
 of the most useful are the following:</p>
 <ul class="simple">
@@ -349,16 +367,9 @@ tolerance for real-valued comparisons.</p>
 argument, which gives a string that will be printed if the assertion fails. If
 no message is provided, you will be pointed to the file and line number of the
 failed assertion.</p>
-<p>If you have many tests of the same subroutine, then you&#8217;ll often find quite a
-lot of duplication between the tests. It&#8217;s good practice to extract major areas
-of duplication to their own subroutines in the .pf file, which can be called by
-your tests. This aids the understandability and maintainability of your
-tests. pFUnit knows which subroutines are tests and which are &#8220;helper&#8221; routines
-because of the <code class="docutils literal"><span class="pre">&#64;Test</span></code> directives: You only add a <code class="docutils literal"><span class="pre">&#64;Test</span></code> directive for your
-tests, not for your helper routines.</p>
 </div>
 <div class="section" id="defining-a-test-class-in-order-to-define-setup-and-teardown-methods">
-<h3>1.5.2. Defining a test class in order to define setUp and tearDown methods<a class="headerlink" href="#defining-a-test-class-in-order-to-define-setup-and-teardown-methods" title="Permalink to this headline">¶</a></h3>
+<h3>5.6.2. Defining a test class in order to define setUp and tearDown methods<a class="headerlink" href="#defining-a-test-class-in-order-to-define-setup-and-teardown-methods" title="Permalink to this headline">¶</a></h3>
 <p>As noted in the comments in <code class="docutils literal"><span class="pre">test_circle.pf</span></code>, the definition of a test class
 (here, <code class="docutils literal"><span class="pre">TestCircle</span></code>) is optional. However, it&#8217;s convenient to define a minimal
 test class when you first write a new .pf file:</p>
@@ -422,7 +433,7 @@ all). Its creation can look like:</p>
 </div>
 </div>
 <div class="section" id="more-on-test-teardown">
-<h3>1.5.3. More on test teardown<a class="headerlink" href="#more-on-test-teardown" title="Permalink to this headline">¶</a></h3>
+<h3>5.6.3. More on test teardown<a class="headerlink" href="#more-on-test-teardown" title="Permalink to this headline">¶</a></h3>
 <p>All of the tests in a single test executable - which, for CIME, typically means
 all of the tests defined in all <code class="docutils literal"><span class="pre">.pf</span></code> files in a single test directory - will
 execute one after another in one run of the executable. This means that, if you
@@ -458,7 +469,7 @@ test. (Incidentally, this is just one of many reasons to prefer explicit
 argument-passing over the use of global variables.)</p>
 </div>
 <div class="section" id="pfunit-documentation-and-examples">
-<h3>1.5.4. pFUnit documentation and examples<a class="headerlink" href="#pfunit-documentation-and-examples" title="Permalink to this headline">¶</a></h3>
+<h3>5.6.4. pFUnit documentation and examples<a class="headerlink" href="#pfunit-documentation-and-examples" title="Permalink to this headline">¶</a></h3>
 <p>Some pFUnit documentation is available here: <a class="reference external" href="http://pfunit.sourceforge.net/">http://pfunit.sourceforge.net/</a></p>
 <p>If you download pFUnit (from
 <a class="reference external" href="http://sourceforge.net/projects/pfunit/">http://sourceforge.net/projects/pfunit/</a>), you can find more
@@ -476,21 +487,21 @@ many uses of pFUnit features in these tests.</li>
 </div>
 </div>
 <div class="section" id="finding-more-documentation-and-examples-in-cime">
-<h2>1.6. Finding more documentation and examples in CIME<a class="headerlink" href="#finding-more-documentation-and-examples-in-cime" title="Permalink to this headline">¶</a></h2>
+<h2>5.7. Finding more documentation and examples in CIME<a class="headerlink" href="#finding-more-documentation-and-examples-in-cime" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="documentation-of-the-unit-test-build-system">
-<h3>1.6.1. Documentation of the unit test build system<a class="headerlink" href="#documentation-of-the-unit-test-build-system" title="Permalink to this headline">¶</a></h3>
-<p>The CMake build infrastructure is in <code class="docutils literal"><span class="pre">cime/src/externals/CMake</span></code>.</p>
+<h3>5.7.1. Documentation of the unit test build system<a class="headerlink" href="#documentation-of-the-unit-test-build-system" title="Permalink to this headline">¶</a></h3>
+<p>The CMake build infrastructure is in <code class="docutils literal"><span class="pre">$CIMEROOT/src/externals/CMake</span></code>.</p>
 <p>The infrastructure for building and running tests with <code class="docutils literal"><span class="pre">run_tests.py</span></code> is in
-<code class="docutils literal"><span class="pre">cime/tools/unit_testing</span></code>. That directory also contains some general
+<code class="docutils literal"><span class="pre">$CIMEROOT/tools/unit_testing</span></code>. That directory also contains some general
 documentation about how to use the CIME unit test infrastructure (in the
 <code class="docutils literal"><span class="pre">README</span></code> file), and examples (in the <code class="docutils literal"><span class="pre">Examples</span></code> directory).</p>
 </div>
 <div class="section" id="finding-more-detailed-examples">
-<h3>1.6.2. Finding more detailed examples<a class="headerlink" href="#finding-more-detailed-examples" title="Permalink to this headline">¶</a></h3>
+<h3>5.7.2. Finding more detailed examples<a class="headerlink" href="#finding-more-detailed-examples" title="Permalink to this headline">¶</a></h3>
 <p>At this point, there are many examples of unit tests in CIME, some simple and
 some quite complex. You can find these by looking for files with the &#8216;.pf&#8217;
 extension:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span>find . -name &#39;*.pf&#39;
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; find . -name <span class="s1">&#39;*.pf&#39;</span>
 </pre></div>
 </div>
 <p>You can also see examples of the unit test build scripts by viewing the
@@ -512,10 +523,13 @@ CMakeLists.txt files throughout the source tree.</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="index.html" title="Miscellaneous Tools"
+          <a href="multi-instance.html" title="6. Multi-instance component functionality"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="testing.html" title="4. Testing with create_test"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" >Miscellaneous Tools</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
