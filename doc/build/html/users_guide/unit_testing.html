@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5. Fortran Unit Testing &mdash; on  documentation</title>
+    <title>5. Fortran Unit Testing &#8212; on  documentation</title>
     
     <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -18,15 +18,16 @@
         VERSION:     '',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/bizstyle.js"></script>
-    <link rel="top" title="on  documentation" href="../index.html" />
-    <link rel="up" title="CIME User’s Guide Part 1: Basic Usage" href="index.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="6. Multi-instance component functionality" href="multi-instance.html" />
     <link rel="prev" title="4. Testing with create_test" href="testing.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -47,8 +48,8 @@
         <li class="right" >
           <a href="testing.html" title="4. Testing with create_test"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -94,7 +95,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/users_guide/unit_testing.txt"
+      <li><a href="../_sources/users_guide/unit_testing.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -150,13 +151,17 @@ These consist of:</p>
 <p>These instructions assume that you are using a machine that already has pFUnit installed, along with the necessary support in CIME.
 If that is not the case, then see the section <a class="reference internal" href="#adding-machine-support"><span class="std std-ref">How to add unit testing support on your machine</span></a>.</p>
 <p>From the top-level cime directory, you can run all of CIME&#8217;s Fortran unit tests simply by running:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; tools/unit_testing/run_tests.py --build-dir MY_BUILD_DIR
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; scripts/fortran_unit_testing/run_tests.py --build-dir MY_BUILD_DIR
 </pre></div>
 </div>
 <p>where you can replace <code class="docutils literal"><span class="pre">MY_BUILD_DIR</span></code> with a path to the directory where you would like the unit test build files to be placed.
-Once you have built the unit tests once (whether the build was successful or not), you can reuse the same build directory later to speed up the rebuild.
+If you would like to ensure a completely clean build, you can use:</p>
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; scripts/fortran_unit_testing/run_tests.py --build-dir <span class="sb">`</span>mktemp -d ./unit_tests.XXXXXXXX<span class="sb">`</span>
+</pre></div>
+</div>
+<p>Once you have built the unit tests once (whether the build was successful or not), you can reuse the same build directory later to speed up the rebuild.
 There are a number of useful arguments to <code class="docutils literal"><span class="pre">run_tests.py</span></code>; for full usage information, run:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; tools/unit_testing/run_tests.py -h
+<div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; scripts/fortran_unit_testing/run_tests.py -h
 </pre></div>
 </div>
 <p>If the build is successful, then you should get a message that looks like this:</p>
@@ -214,7 +219,7 @@ Then source either <code class="docutils literal"><span class="pre">./.env_mach_
 <div class="highlight-shell"><div class="highlight"><pre><span></span>&gt; mkdir build
 &gt; <span class="nb">cd</span> build
 &gt; cmake -DMPI<span class="o">=</span>NO -DOPENMP<span class="o">=</span>NO -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="nv">$PFUNIT</span> ..
-&gt; make -j 4
+&gt; make -j <span class="m">4</span>
 </pre></div>
 </div>
 </li>
@@ -491,7 +496,7 @@ many uses of pFUnit features in these tests.</li>
 <h3>5.7.1. Documentation of the unit test build system<a class="headerlink" href="#documentation-of-the-unit-test-build-system" title="Permalink to this headline">¶</a></h3>
 <p>The CMake build infrastructure is in <code class="docutils literal"><span class="pre">$CIMEROOT/src/externals/CMake</span></code>.</p>
 <p>The infrastructure for building and running tests with <code class="docutils literal"><span class="pre">run_tests.py</span></code> is in
-<code class="docutils literal"><span class="pre">$CIMEROOT/tools/unit_testing</span></code>. That directory also contains some general
+<code class="docutils literal"><span class="pre">$CIMEROOT/scripts/fortran_unit_testing</span></code>. That directory also contains some general
 documentation about how to use the CIME unit test infrastructure (in the
 <code class="docutils literal"><span class="pre">README</span></code> file), and examples (in the <code class="docutils literal"><span class="pre">Examples</span></code> directory).</p>
 </div>
@@ -527,13 +532,13 @@ CMakeLists.txt files throughout the source tree.</p>
         <li class="right" >
           <a href="testing.html" title="4. Testing with create_test"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.3.
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
     </div>
   </body>
 </html>
