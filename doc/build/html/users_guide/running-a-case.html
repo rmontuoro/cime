@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6. Running a Case &#8212; on  documentation</title>
+    <title>6. Running a Case &mdash; on  documentation</title>
     
     <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -18,16 +18,15 @@
         VERSION:     '',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
+        HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/bizstyle.js"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="on  documentation" href="../index.html" />
+    <link rel="up" title="CIME User’s Guide Part 1: Basic Usage" href="index.html" />
     <link rel="next" title="7. Customizing a case" href="customizing-a-case.html" />
     <link rel="prev" title="5. Building a Case" href="building-a-case.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -48,8 +47,8 @@
         <li class="right" >
           <a href="building-a-case.html" title="5. Building a Case"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -57,9 +56,17 @@
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">6. Running a Case</a><ul>
-<li><a class="reference internal" href="#calling-case-submit">6.1. Calling <strong>case.submit</strong></a></li>
+<li><a class="reference internal" href="#calling-case-submit">6.1. Calling <strong>case.submit</strong></a><ul>
+<li><a class="reference internal" href="#result-of-running-case-submit">6.1.1. Result of running case.submit</a></li>
+<li><a class="reference internal" href="#monitoring-case-job-statuses">6.1.2. Monitoring case job statuses</a></li>
+<li><a class="reference internal" href="#troubleshooting-a-job-that-fails">6.1.3. Troubleshooting a job that fails</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#input-data">6.2. Input data</a></li>
-<li><a class="reference internal" href="#controlling-starting-stopping-and-restarting-a-run">6.3. Controlling starting, stopping and restarting a run</a></li>
+<li><a class="reference internal" href="#controlling-starting-stopping-and-restarting-a-run">6.3. Controlling starting, stopping and restarting a run</a><ul>
+<li><a class="reference internal" href="#run-type-initialization">6.3.1. Run-type initialization</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#controlling-output-data">6.4. Controlling output data</a></li>
 <li><a class="reference internal" href="#restarting-a-run">6.5. Restarting a run</a><ul>
 <li><a class="reference internal" href="#backing-up-to-a-previous-restart">6.5.1. Backing up to a previous restart</a></li>
@@ -84,7 +91,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/users_guide/running-a-case.rst.txt"
+      <li><a href="../_sources/users_guide/running-a-case.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -108,14 +115,26 @@
             
   <div class="section" id="running-a-case">
 <span id="id1"></span><h1>6. Running a Case<a class="headerlink" href="#running-a-case" title="Permalink to this headline">¶</a></h1>
-<p>The following summarizes details of running the model exectuable.</p>
 <div class="section" id="calling-case-submit">
 <span id="case-submit"></span><h2>6.1. Calling <strong>case.submit</strong><a class="headerlink" href="#calling-case-submit" title="Permalink to this headline">¶</a></h2>
-<p>Before you can run the job, you need to make sure the batch queue variables are set correctly for the specific run being targeted.
-The batch submissions variables are contained in the files <code class="docutils literal"><span class="pre">env_batch.xml</span></code>.
-You should carefully check the batch queue submission lines and make sure that you have appropriate account numbers, time limits, and stdout file names.
-You should also modify <code class="docutils literal"><span class="pre">env_run.xml</span></code> for your particular needs using <a class="reference internal" href="customizing-a-case.html#modifying-an-xml-file"><span class="std std-ref">xmlchange</span></a>.</p>
-<p>Once you have run <strong>case.setup</strong> and <strong>case.build</strong>, you need to run <strong>case.submit</strong> to submit the run to your machine&#8217;s batch queue system.</p>
+<p>Before you submit the case using case.submit, you need to make sure
+the batch queue variables are set correctly for the specific run being
+targeted.  The batch submissions variables are contained in the file
+<code class="docutils literal"><span class="pre">$CASEROOT/env_batch.xml</span></code> under the XML <code class="docutils literal"><span class="pre">&lt;group</span> <span class="pre">id=&quot;case.run&quot;&gt;</span></code>
+and <code class="docutils literal"><span class="pre">&lt;group</span> <span class="pre">id=&quot;case.st_archive&quot;&gt;</span></code> elements. Make sure that you
+have appropriate account numbers (<code class="docutils literal"><span class="pre">PROJECT</span></code>), time limits
+(<code class="docutils literal"><span class="pre">JOB_WALLCLOCK_TIME</span></code>), and queue (<code class="docutils literal"><span class="pre">JOB_QUEUE</span></code>) for those groups..</p>
+<p>You should also modify <code class="docutils literal"><span class="pre">$CASEROOT/env_run.xml</span></code> for
+your particular needs using <a class="reference internal" href="customizing-a-case.html#modifying-an-xml-file"><span class="std std-ref">xmlchange</span></a>.</p>
+<p>Once you have run <strong>case.setup</strong> and <strong>case.build</strong>, you need to run
+<strong>case.submit</strong> to submit the run to your machine&#8217;s batch queue
+system.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; cd $CASEROOT
+&gt; ./case.submit
+</pre></div>
+</div>
+<div class="section" id="result-of-running-case-submit">
+<h3>6.1.1. Result of running case.submit<a class="headerlink" href="#result-of-running-case-submit" title="Permalink to this headline">¶</a></h3>
 <p>When called, the script, <code class="docutils literal"><span class="pre">case.submit</span></code> will:</p>
 <ul class="simple">
 <li>Load the necessary environment.</li>
@@ -126,37 +145,104 @@ You should also modify <code class="docutils literal"><span class="pre">env_run.
 </ul>
 <p>Upon successful completion of the run, <strong>case.run</strong> will:</p>
 <ul class="simple">
-<li>Put timing information in <code class="docutils literal"><span class="pre">$CASEROOT/timing</span></code>. A summary timing output file is produced after every model run. This file is <code class="docutils literal"><span class="pre">$CASEROOT/timing/ccsm_timing.$CASE.$date.gz</span></code> (where <code class="docutils literal"><span class="pre">$date</span></code> is a datestamp set by CIME at runtime) and contains a summary of various information. See <a class="reference internal" href="optimizing-processor-layout.html#model-timing-data"><span class="std std-ref">model timing data</span></a> for more details.</li>
+<li>Put timing information in <code class="docutils literal"><span class="pre">$CASEROOT/timing</span></code>. A summary timing
+output file is produced after every model run. This file is
+<code class="docutils literal"><span class="pre">$CASEROOT/timing/ccsm_timing.$CASE.$date.gz</span></code> (where <code class="docutils literal"><span class="pre">$date</span></code> is
+a datestamp set by CIME at runtime) and contains a summary of
+various information. See <a class="reference internal" href="optimizing-processor-layout.html#model-timing-data"><span class="std std-ref">model timing data</span></a>
+for more details.</li>
 <li>Copy log files back to <code class="docutils literal"><span class="pre">$LOGDIR</span></code>.</li>
 <li>Submit the short term archiver script <strong>case.st_archive</strong> to the batch queue if <code class="docutils literal"><span class="pre">$DOUT_S</span></code> is TRUE.</li>
-<li>Submit the long-term archiver script, <strong>case.l_archive</strong> to the batch queue If <code class="docutils literal"><span class="pre">$DOUT_L_MS</span></code> is TRUE.</li>
-<li>Resubmit <strong>case.submit</strong>  <code class="docutils literal"><span class="pre">$RESUBMIT</span></code> &gt;0.</li>
+<li>Resubmit <strong>case.run</strong> if <code class="docutils literal"><span class="pre">$RESUBMIT</span></code> &gt;0.</li>
 </ul>
-<p>Short term archiving will move component history, log, diagnostic, and restart files will be moved from <code class="docutils literal"><span class="pre">$RUNDIR</span></code> to the short-term archive directory, <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code>.</p>
-<p>If the job runs to completion, you should have &#8220;SUCCESSFUL TERMINATION OF CPL7-CCSM&#8221; near the end of your STDOUT file. New data should be in the subdirectories under $DOUT_S_ROOT, or if you have long-term archiving turned on, it should be automatically moved to subdirectories under $DOUT_L_MSROOT.</p>
-<p>If the job failed, there are several places where you should look for information. Start with the STDOUT and STDERR file(s) in $CASEROOT. If you don&#8217;t find an obvious error message there, the $RUNDIR/$model.log.$datestamp files will probably give you a hint. First check cpl.log.$datestamp, because it will often tell you when the model failed. Then check the rest of the component log files. Please see <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">troubleshooting runtime errors</a> for more information.</p>
+<p>Short term archiving will copy and move component history, log,
+diagnostic, and restart files from <code class="docutils literal"><span class="pre">$RUNDIR</span></code> to the short-term
+archive directory, <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code>.</p>
+</div>
+<div class="section" id="monitoring-case-job-statuses">
+<h3>6.1.2. Monitoring case job statuses<a class="headerlink" href="#monitoring-case-job-statuses" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal"><span class="pre">$CASEROOT/CaseStatus</span></code> file contains a log of all the job states
+and xmlchange commands in chronological order. An example of status
+messages from a CaseStatus file with successful job completions
+includes:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">29</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">setup</span> <span class="n">starting</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">29</span><span class="p">:</span><span class="mi">54</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">setup</span> <span class="n">success</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mi">58</span><span class="p">:</span> <span class="n">xmlchange</span> <span class="n">success</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">./</span><span class="n">xmlchange</span> <span class="n">STOP_N</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">STOP_OPTION</span><span class="o">=</span><span class="n">nmonths</span>  <span class="o">&lt;/</span><span class="n">command</span><span class="o">&gt;</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">31</span><span class="p">:</span><span class="mi">26</span><span class="p">:</span> <span class="n">xmlchange</span> <span class="n">success</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">./</span><span class="n">xmlchange</span> <span class="n">STOP_N</span><span class="o">=</span><span class="mi">1</span>  <span class="o">&lt;/</span><span class="n">command</span><span class="o">&gt;</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">33</span><span class="p">:</span><span class="mi">51</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">build</span> <span class="n">starting</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">15</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">34</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">build</span> <span class="n">success</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">16</span><span class="p">:</span><span class="mi">02</span><span class="p">:</span><span class="mi">35</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">run</span> <span class="n">starting</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">16</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">31</span><span class="p">:</span> <span class="n">case</span><span class="o">.</span><span class="n">run</span> <span class="n">success</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">16</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span> <span class="n">st_archive</span> <span class="n">starting</span>
+<span class="o">---------------------------------------------------</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">14</span> <span class="mi">16</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">58</span><span class="p">:</span> <span class="n">st_archive</span> <span class="n">success</span>
+<span class="o">---------------------------------------------------</span>
+</pre></div>
+</div>
+<p>After the short term archiver completes, data from the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> is in the
+subdirectories under <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Once you have a successful first run, you must set the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variable <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> to <code class="docutils literal"><span class="pre">TRUE</span></code> in <code class="docutils literal"><span class="pre">env_run.xml</span></code> before resubmitting, otherwise the job will not progress. You may also need to modify the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variables <code class="docutils literal"><span class="pre">$STOP_OPTION</span></code>, <code class="docutils literal"><span class="pre">$STOP_N</span></code> and/or <code class="docutils literal"><span class="pre">$STOP_DATE</span></code> as well as <code class="docutils literal"><span class="pre">$REST_OPTION</span></code>, <code class="docutils literal"><span class="pre">$REST_N</span></code> and/or <code class="docutils literal"><span class="pre">$REST_DATE</span></code>, and <code class="docutils literal"><span class="pre">$RESUBMIT</span></code> before resubmitting.</p>
+<p class="last">Once you have a successful first run, you must set the
+<code class="docutils literal"><span class="pre">env_run.xml</span></code> variable <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> to <code class="docutils literal"><span class="pre">TRUE</span></code> in
+<code class="docutils literal"><span class="pre">env_run.xml</span></code> before resubmitting, otherwise the job will not
+progress. You may also need to modify the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variables
+<code class="docutils literal"><span class="pre">$STOP_OPTION</span></code>, <code class="docutils literal"><span class="pre">$STOP_N</span></code> and/or <code class="docutils literal"><span class="pre">$STOP_DATE</span></code> as well as
+<code class="docutils literal"><span class="pre">$REST_OPTION</span></code>, <code class="docutils literal"><span class="pre">$REST_N</span></code> and/or <code class="docutils literal"><span class="pre">$REST_DATE</span></code>, and <code class="docutils literal"><span class="pre">$RESUBMIT</span></code>
+before resubmitting.</p>
 </div>
 <p>You can see a complete example of how to run a case in <a class="reference internal" href="faq/basics-a-basic-example.html#faq-basic-example"><span class="std std-ref">the basic example</span></a>.</p>
 </div>
+<div class="section" id="troubleshooting-a-job-that-fails">
+<h3>6.1.3. Troubleshooting a job that fails<a class="headerlink" href="#troubleshooting-a-job-that-fails" title="Permalink to this headline">¶</a></h3>
+<p>There are several places where you should look for information if a
+job fails. Start with the STDOUT and STDERR file(s) in <code class="docutils literal"><span class="pre">$CASEROOT</span></code>.
+If you don&#8217;t find an obvious error message there, the
+$RUNDIR/$model.log.$datestamp files will probably give you a
+hint. First check cpl.log.$datestamp, because it will often tell you
+when the model failed. Then check the rest of the component log
+files. Please see <a class="reference internal" href="troubleshooting.html#troubleshooting"><span class="std std-ref">troubleshooting run-time
+problems</span></a> for more information.</p>
+</div>
+</div>
 <div class="section" id="input-data">
 <span id="id2"></span><h2>6.2. Input data<a class="headerlink" href="#input-data" title="Permalink to this headline">¶</a></h2>
-<p>The script <code class="docutils literal"><span class="pre">$CASEROOT</span></code> script <strong>check_input_data</strong> determines if the required data files for your case exist on local disk in the appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.
-As part of submitting the run to the batch queueing system, <strong>case.submit</strong>  also calls <strong>check_input_data</strong> to verify that required input data sets are on local disk and and download missing data automatically on local disk in the appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code></p>
-<p>The required input datasets needed for each component are found in the <code class="docutils literal"><span class="pre">$CASEROOT/Buildconf</span></code> directory in the files <code class="docutils literal"><span class="pre">xxx.input_data_list</span></code>, where <code class="docutils literal"><span class="pre">xxx</span></code> are is the component name.
-These files are generated a call to <strong>preview_namlists</strong> and are in turn created by each component&#8217;s <strong>buildnml</strong> script.
-As an example, for compsets consisting only of data models (i.e. <code class="docutils literal"><span class="pre">A</span></code> compsetes), the following files will be created in <code class="docutils literal"><span class="pre">$CASEROOT/Buildconf</span></code> when <strong>case.submit</strong> is called:</p>
+<p>The <code class="docutils literal"><span class="pre">$CASEROOT</span></code> script <strong>check_input_data</strong> determines if the
+required data files for your case exist on local disk in the
+appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.  As part of submitting
+the run to the batch queueing system, <strong>case.submit</strong> also calls
+<strong>check_input_data</strong> to verify that required input data sets are
+accessible on local disk and download missing data automatically to
+local disk from in the appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code></p>
+<p>The required input datasets needed for each component are found in the
+<code class="docutils literal"><span class="pre">$CASEROOT/Buildconf</span></code> directory in the files
+<code class="docutils literal"><span class="pre">xxx.input_data_list</span></code>, where <code class="docutils literal"><span class="pre">xxx</span></code> is the component name.
+These files are generated via a call to <strong>preview_namlists</strong> and are in
+turn created by each component&#8217;s <strong>buildnml</strong> script.  As an example,
+for compsets consisting only of data models (i.e. <code class="docutils literal"><span class="pre">A</span></code> compsets),
+the following files will be created in <code class="docutils literal"><span class="pre">$CASEROOT/Buildconf</span></code> when
+<strong>case.submit</strong> is called:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">datm</span><span class="o">.</span><span class="n">input_data_list</span>
 <span class="n">dice</span><span class="o">.</span><span class="n">input_data_list</span>
 <span class="n">docn</span><span class="o">.</span><span class="n">input_data_list</span>
 <span class="n">drof</span><span class="o">.</span><span class="n">input_data_list</span>
 </pre></div>
 </div>
-<p><strong>check_input_data</strong> verifies that each file listed in the <code class="docutils literal"><span class="pre">xxx.input_data_list</span></code> files exists in <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.
-If any of the required datasets do not exist locally, <strong>check_input_data</strong> provides the capability for downloading them to the <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code> directory hierarchy via interaction with the input data server.
-You can independently verify that the required data is present locally by using the following commands:</p>
+<p><strong>check_input_data</strong> verifies that each file listed in the
+<code class="docutils literal"><span class="pre">xxx.input_data_list</span></code> files exists in <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.  If any of
+the required datasets do not exist locally, <strong>check_input_data</strong>
+provides the capability for downloading them to the <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>
+directory hierarchy via interaction with the Subversion input data server.  You
+can independently verify that the required data is present locally by
+using the following commands:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>&gt; cd $CASEROOT
 &gt; check_input_data -help
 &gt; check_input_data -inputdata $DIN_LOC_ROOT -check
@@ -167,115 +253,247 @@ You can independently verify that the required data is present locally by using 
 &gt; check_input_data -inputdata $DIN_LOC_ROOT -export
 </pre></div>
 </div>
-<p>Required data files not on local disk will be downloaded through interaction with the Subversion input data server.
-These will be placed in the appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.</p>
-<p>In the following, we focus on the handling of run control (e.g. length of run, continuing a run) and output data. We also give a more detailed description of CIME restarts.</p>
+<p>Required data files not on local disk will be downloaded through
+interaction with the Subversion input data server.  These will be
+placed in the appropriate subdirectory of <code class="docutils literal"><span class="pre">$DIN_LOC_ROOT</span></code>.</p>
 </div>
 <div class="section" id="controlling-starting-stopping-and-restarting-a-run">
-<h2>6.3. Controlling starting, stopping and restarting a run<a class="headerlink" href="#controlling-starting-stopping-and-restarting-a-run" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">env_run.xml</span></code> contains variables which may be modified at initialization and any time during the course of that model run.
-Among other features, the file variables comprise coupler namelist settings for the model stop time, model restart frequency, coupler history frequency and a flag to determine if the run should be flagged as a continuation run.
-At a minimum, you will only need to set the variables <code class="docutils literal"><span class="pre">$STOP_OPTION</span></code> and <code class="docutils literal"><span class="pre">$STOP_N</span></code>.
-The other driver namelist settings will then be given consistent and reasonable default values.
-These default settings guarantee that restart files are produced at the end of the model run.</p>
-<p>The case initialization type is set in <code class="docutils literal"><span class="pre">env_run.xml</span></code>. A CIME run can be initialized in one of three ways; startup, branch, or hybrid.</p>
+<span id="controlling-start-stop-restart"></span><h2>6.3. Controlling starting, stopping and restarting a run<a class="headerlink" href="#controlling-starting-stopping-and-restarting-a-run" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">env_run.xml</span></code> contains variables which may be modified at
+initialization and any time during the course of the model run.
+Among other features, the <code class="docutils literal"><span class="pre">env_run.xml</span></code> file variables comprise
+coupler namelist settings for the model stop time, model restart
+frequency, coupler history frequency and a flag to determine if the
+run should be flagged as a continuation run.  At a minimum, you will
+only need to set the variables <code class="docutils literal"><span class="pre">$STOP_OPTION</span></code> and <code class="docutils literal"><span class="pre">$STOP_N</span></code>.  The
+other driver namelist settings will then be given consistent and
+reasonable default values.  These default settings guarantee that
+restart files are produced at the end of the model run.</p>
+<div class="section" id="run-type-initialization">
+<h3>6.3.1. Run-type initialization<a class="headerlink" href="#run-type-initialization" title="Permalink to this headline">¶</a></h3>
+<p>The case initialization type is set using the <code class="docutils literal"><span class="pre">$RUN_TYPE</span></code> variable in
+<code class="docutils literal"><span class="pre">env_run.xml</span></code>. A CIME run can be initialized in one of three ways;
+startup, branch, or hybrid.</p>
 <dl class="docutils">
 <dt><code class="docutils literal"><span class="pre">startup</span></code></dt>
-<dd>In a startup run (the default), all components are initialized using baseline states.
-These baseline states are set independently by each component and can include the use of restart files, initial files, external observed data files, or internal initialization (i.e., a &#8220;cold start&#8221;).
-In a startup run, the coupler sends the start date to the components at initialization. In addition, the coupler does not need an input data file. In a startup initialization, the ocean model does not start until the second ocean coupling step.</dd>
+<dd>In a startup run (the default), all components are initialized using
+baseline states.  These baseline states are set independently by
+each component and can include the use of restart files, initial
+files, external observed data files, or internal initialization
+(i.e., a &#8220;cold start&#8221;).  In a startup run, the coupler sends the
+start date to the components at initialization. In addition, the
+coupler does not need an input data file. In a startup
+initialization, the ocean model does not start until the second
+ocean coupling step.</dd>
 <dt><code class="docutils literal"><span class="pre">branch</span></code></dt>
-<dd>In a branch run, all components are initialized using a consistent set of restart files from a previous run (determined by the <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> variables in <code class="docutils literal"><span class="pre">env_run.xml</span></code>).
-The case name is generally changed for a branch run, although it does not have to be.
-In a branch run, setting <code class="docutils literal"><span class="pre">$RUN_STARTDATE</span></code> is ignored because the model components obtain the start date from their restart datasets.
-Therefore, the start date cannot be changed for a branch run.
-This is the same mechanism that is used for performing a restart run (where <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> is set to TRUE in the <code class="docutils literal"><span class="pre">env_run.xml</span></code> file).
-Branch runs are typically used when sensitivity or parameter studies are required, or when settings for history file output streams need to be modified while still maintaining bit-for-bit reproducibility.
-Under this scenario, the new case is able to produce an exact bit-for-bit restart in the same manner as a continuation run if no source code or component namelist inputs are modified.
-All models use restart files to perform this type of run. <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> are required for branch runs.
-To set up a branch run, locate the restart tar file or restart directory for <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> from a previous run, then place those files in the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> directory. See <a class="reference internal" href="faq/basics-setting-up-a-branch-or-hybrid-run.html#setting-up-a-branch-run"><span class="std std-ref">setting up a branch run</span></a>.</dd>
+<dd>In a branch run, all components are initialized using a consistent
+set of restart files from a previous run (determined by the
+<code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> variables in <code class="docutils literal"><span class="pre">env_run.xml</span></code>).
+The case name is generally changed for a branch run, although it
+does not have to be.  In a branch run, setting <code class="docutils literal"><span class="pre">$RUN_STARTDATE</span></code> is
+ignored because the model components obtain the start date from
+their restart datasets.  Therefore, the start date cannot be changed
+for a branch run.  This is the same mechanism that is used for
+performing a restart run (where <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> is set to TRUE in
+the <code class="docutils literal"><span class="pre">env_run.xml</span></code> file).  Branch runs are typically used when
+sensitivity or parameter studies are required, or when settings for
+history file output streams need to be modified while still
+maintaining bit-for-bit reproducibility.  Under this scenario, the
+new case is able to produce an exact bit-for-bit restart in the same
+manner as a continuation run if no source code or component namelist
+inputs are modified.  All models use restart files to perform this
+type of run. <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> are required for
+branch runs.  To set up a branch run, locate the restart tar file or
+restart directory for <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code> from a
+previous run, then place those files in the <code class="docutils literal"><span class="pre">$RUNDIR</span></code>
+directory. See <a class="reference internal" href="faq/basics-setting-up-a-branch-or-hybrid-run.html#setting-up-a-branch-run"><span class="std std-ref">setting up a branch
+run</span></a>.</dd>
 <dt><code class="docutils literal"><span class="pre">hybrid</span></code></dt>
-<dd>A hybrid run indicates that the model is initialized more like a startup, but uses initialization datasets from a previous case.
-This is somewhat analogous to a branch run with relaxed restart constraints.
-A hybrid run allows users to bring together combinations of initial/restart files from a previous case (specified by <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code>) at a given model output date (specified by <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>).
-Unlike a branch run, the starting date of a hybrid run (specified by <code class="docutils literal"><span class="pre">$RUN_STARTDATE</span></code>) can be modified relative to the reference case.
-In a hybrid run, the model does not continue in a bit-for-bit fashion with respect to the reference case.
-The resulting climate, however, should be continuous provided that no model source code or namelists are changed in the hybrid run.
-In a hybrid initialization, the ocean model does not start until the second ocean coupling step, and the coupler does a &#8220;cold start&#8221; without a restart file.</dd>
+<dd>A hybrid run indicates that the model is initialized more like a
+startup, but uses initialization datasets from a previous case.
+This is somewhat analogous to a branch run with relaxed restart
+constraints.  A hybrid run allows users to bring together
+combinations of initial/restart files from a previous case
+(specified by <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code>) at a given model output date
+(specified by <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>).  Unlike a branch run, the starting
+date of a hybrid run (specified by <code class="docutils literal"><span class="pre">$RUN_STARTDATE</span></code>) can be
+modified relative to the reference case.  In a hybrid run, the model
+does not continue in a bit-for-bit fashion with respect to the
+reference case.  The resulting climate, however, should be
+continuous provided that no model source code or namelists are
+changed in the hybrid run.  In a hybrid initialization, the ocean
+model does not start until the second ocean coupling step, and the
+coupler does a &#8220;cold start&#8221; without a restart file.</dd>
 </dl>
-<p>The variable <code class="docutils literal"><span class="pre">$RUN_TYPE</span></code> determines the initialization type.
-This setting is only important for the initial run of a production run when the <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> variable is set to FALSE.
-After the initial run, the <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> variable is set to TRUE, and the model restarts exactly using input files in a case, date, and bit-for-bit continuous fashion.
-The variable <code class="docutils literal"><span class="pre">$RUN_TYPE</span></code> is the start date (in yyyy-mm-dd format) either a startup or hybrid run.
-If the run is targeted to be a hybrid or branch run, you must also specify values for <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>.
-All run startup variables are discussed in <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">run start control variables</a>.</p>
-<p>Before a job is submitted to the batch system, you need to first check that the batch submission lines in <code class="docutils literal"><span class="pre">env_batch.xml</span></code> are appropriate. These lines should be checked and modified accordingly for appropriate account numbers, time limits, and stdout/stderr file names. You should then modify <code class="docutils literal"><span class="pre">env_run.xml</span></code> to determine the key run-time settings. See <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">controlling run termination</a>, <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">controlling run restarts</a>, and <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">performing model restarts</a> for more details. A brief note on restarting runs. When you first begin a branch, hybrid or startup run, CONTINUE_RUN must be set to FALSE. When you successfully run and get a restart file, you will need to change CONTINUE_RUN to TRUE for the remainder of your run. See performing model restarts for more details.   Setting the RESUBMIT option to a value &gt; 0 will cause the CONTINUE_RUN variable to be automatically set to TRUE upon completion of the initial run.</p>
-<p>By default,
-<code class="docutils literal"><span class="pre">`</span>
-<span class="pre">STOP_OPTION</span> <span class="pre">=</span> <span class="pre">ndays</span>
-<span class="pre">STOP_N</span> <span class="pre">=</span> <span class="pre">5</span>
-<span class="pre">STOP_DATE</span> <span class="pre">=</span> <span class="pre">-999</span>
-<span class="pre">`</span></code>
-The default setting is only appropriate for initial testing. Before a longer run is started, update the stop times based on the case throughput and batch queue limits. For example, if the model runs 5 model years/day, set <code class="docutils literal"><span class="pre">RESUBMIT=30,</span> <span class="pre">STOP_OPTION=</span> <span class="pre">nyears,</span> <span class="pre">and</span> <span class="pre">STOP_N=</span> <span class="pre">5</span></code>. The model will then run in five year increments, and stop after 30 submissions.</p>
+<p>The variable <code class="docutils literal"><span class="pre">$RUN_TYPE</span></code> determines the initialization type.  This
+setting is only important for the initial run of a production run when
+the <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> variable is set to FALSE.  After the initial
+run, the <code class="docutils literal"><span class="pre">$CONTINUE_RUN</span></code> variable is set to TRUE, and the model
+restarts exactly using input files in a case, date, and bit-for-bit
+continuous fashion.</p>
+<p>The variable <code class="docutils literal"><span class="pre">$RUN_STARTDATE</span></code> is the start date
+(in yyyy-mm-dd format) for either a startup or hybrid run.  If the run is
+targeted to be a hybrid or branch run, you must also specify values
+for <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>.  All run startup variables
+are discussed in <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">run start control variables</a>.</p>
+<p>A brief note on restarting runs; when you first begin a branch, hybrid
+or startup run, <code class="docutils literal"><span class="pre">CONTINUE_RUN</span></code> must be set to <code class="docutils literal"><span class="pre">FALSE</span></code>.  After the
+job has successfully run and there are restart files, you will need to
+change <code class="docutils literal"><span class="pre">CONTINUE_RUN</span></code> to TRUE for the remainder of your run.
+Setting the <code class="docutils literal"><span class="pre">RESUBMIT</span></code> option to a value &gt; 0 will cause the
+<code class="docutils literal"><span class="pre">CONTINUE_RUN</span></code> variable to be automatically set to <code class="docutils literal"><span class="pre">TRUE</span></code> upon
+completion of the initial run.</p>
+<p>By default,</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">STOP_OPTION</span> <span class="o">=</span> <span class="n">ndays</span>
+<span class="n">STOP_N</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">STOP_DATE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">999</span>
+</pre></div>
+</div>
+<p>The default setting is only appropriate for initial testing. Before a
+longer run is started, update the stop times based on the case
+throughput and batch queue limits. For example, if the model runs 5
+model years/day, set <code class="docutils literal"><span class="pre">RESUBMIT=30,</span> <span class="pre">STOP_OPTION=</span> <span class="pre">nyears,</span> <span class="pre">and</span> <span class="pre">STOP_N=</span>
+<span class="pre">5</span></code>. The model will then run in five year increments, and stop after
+30 submissions.</p>
+</div>
 </div>
 <div class="section" id="controlling-output-data">
 <span id="id3"></span><h2>6.4. Controlling output data<a class="headerlink" href="#controlling-output-data" title="Permalink to this headline">¶</a></h2>
-<p>During a model run, each model component produces its own output datasets consisting of history, restart and output log files.
-Component history files and restart files are in netCDF format. Restart files are used to either exactly restart the model or to serve as initial conditions for other model cases.</p>
-<p>Archiving is a phase of a model run where the generated output data is moved from $RUNDIR to a local disk area (short-term archiving) and subsequently to a long-term storage system (long-term archiving). It has no impact on the production run except to clean up disk space and help manage user quotas. Although short-term and long-term archiving are implemented independently in the scripts, there is a dependence between the two since the short-term archiver must be turned on in order for the long-term archiver to be activated. In <code class="docutils literal"><span class="pre">env_run.xml</span></code>, several variables control the behavior of short and long-term archiving. See <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">short and long term archiving</a> for a description of output data control variables. Several important points need to be made about both short and long term archiving:</p>
+<p>During a model run, each model component produces its own output
+datasets consisting of history, initial, restart, diagnostics, output
+log and rpointer files. Component history files and restart files are
+in netCDF format. Restart files are used to either exactly restart the
+model or to serve as initial conditions for other model cases. The
+rpointer files are text files listing the required component history
+and restart files required for restart.</p>
+<p>Archiving is a phase of a model run where the generated output data is
+moved from <code class="docutils literal"><span class="pre">$RUNDIR</span></code> to a local disk area (short-term archiving).
+It has no impact on the production run except to clean up disk space
+in the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> and help manage user quotas.</p>
+<p>In <code class="docutils literal"><span class="pre">env_run.xml</span></code>, several variables control the behavior of
+short-term archiving. As an example for controlling the data output
+flow using the following example settings:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>DOUT_S = TRUE
+DOUT_S_ROOT = /$SCRATCH/$user/$CASE/archive
+</pre></div>
+</div>
+<p>Several important points need to be made about short term archiving:</p>
 <ul class="simple">
-<li>By default, short-term archiving is enabled and long-term archiving is disabled.</li>
+<li>By default, short-term archiving is enabled (<code class="docutils literal"><span class="pre">$DOUT_S</span> <span class="pre">=</span> <span class="pre">TRUE</span></code>)</li>
 <li>All output data is initially written to <code class="docutils literal"><span class="pre">$RUNDIR</span></code>.</li>
-<li>Unless a user explicitly turns off short-term archiving, files will be moved to <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code> at the end of a successful model run.</li>
-<li>If long-term archiving is enabled, files will be moved to <code class="docutils literal"><span class="pre">$DOUT_L_MSROOT</span></code> by <code class="docutils literal"><span class="pre">$CASE.l_archive</span></code>, which is run as a separate batch job after the successful completion of a model run.</li>
-<li>Users should generally turn off short term-archiving when developing new code.</li>
-<li>If long-term archiving is not enabled, users must monitor quotas and usage in the <code class="docutils literal"><span class="pre">$DOUT_S_ROOT/</span></code> directory and should manually clean up these areas on a frequent basis.</li>
+<li>Unless a user explicitly turns off short-term archiving, files will
+be moved to <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code> at the end of a successful model run.</li>
+<li>Users should generally turn off short-term archiving when developing new code.</li>
 </ul>
-<p>Standard output generated from each component is saved in a &#8220;log file&#8221; for each component in $RUNDIR. Each time the model is run, a single coordinated datestamp is incorporated in the filenames of all output log files associated with that run. This common datestamp is generated by the run script and is of the form YYMMDD-hhmmss, where YYMMDD are the Year, Month, Day and hhmmss are the hour, minute and second that the run began (e.g. ocn.log.040526-082714). Log files are also copied to a user specified directory using the variable $LOGDIR in <code class="docutils literal"><span class="pre">env_run.xml</span></code>. The default is a &#8216;logs&#8217; subdirectory beneath the case directory.</p>
-<p>By default, each component also periodically writes history files (usually monthly) in netCDF format and also writes netCDF or binary restart files in the $RUNDIR directory. The history and log files are controlled independently by each component. History output control (i.e. output fields and frequency) is set in the <code class="docutils literal"><span class="pre">Buildconf/$component.buildnml.csh</span></code> files.</p>
-<p>The raw history data does not lend itself well to easy time-series analysis. For example, CAM writes one or more large netCDF history file(s) at each requested output period. While this behavior is optimal for model execution, it makes it difficult to analyze time series of individual variables without having to access the entire data volume. Thus, the raw data from major model integrations is usually postprocessed into more user-friendly configurations, such as single files containing long time-series of each output fields, and made available to the community.</p>
-<p>As an example, for the following example settings:
-<code class="docutils literal"><span class="pre">`</span>
-<span class="pre">DOUT_S</span> <span class="pre">=</span> <span class="pre">TRUE</span>
-<span class="pre">DOUT_S_ROOT</span> <span class="pre">=</span> <span class="pre">/ptmp/$user/archive</span>
-<span class="pre">DOUT_L_MS</span> <span class="pre">=</span> <span class="pre">TRUE</span>
-<span class="pre">DOUT_L_MSROOT</span> <span class="pre">/USER/csm/$CASE</span>
-<span class="pre">`</span></code>
-the run will automatically submit the <strong>$CASE.l_archive</strong> to the queue upon its completion to archive the data. The system is not bulletproof, and you will want to verify at regular intervals that the archived data is complete, particularly during long running jobs.</p>
+<p>Standard output generated from each component is saved in a &#8220;log file&#8221;
+for each component in the <code class="docutils literal"><span class="pre">$RUNDIR</span></code>. Each time the model is run, a
+single coordinated datestamp is incorporated in the filenames of all
+output log files associated with that run. This common datestamp is
+generated by the run script and is of the form YYMMDD-hhmmss, where
+YYMMDD are the Year, Month, Day and hhmmss are the hour, minute and
+second that the run began (e.g. ocn.log.040526-082714). Log files are
+also copied to a user specified directory using the variable
+<code class="docutils literal"><span class="pre">$LOGDIR</span></code> in <code class="docutils literal"><span class="pre">env_run.xml</span></code>. The default is a &#8216;logs&#8217; subdirectory
+in the <code class="docutils literal"><span class="pre">$CASEROOT</span></code> directory.</p>
+<p>By default, each component also periodically writes history files
+(usually monthly) in netCDF format and also writes netCDF or binary
+restart files in the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> directory. The history and log files
+are controlled independently by each component. History output control
+(i.e. output fields and frequency) is set in the
+<code class="docutils literal"><span class="pre">Buildconf/$component.buildnml.csh</span></code> files.</p>
+<p>The raw history data does not lend itself well to easy time-series
+analysis. For example, CAM writes one or more large netCDF history
+file(s) at each requested output period. While this behavior is
+optimal for model execution, it makes it difficult to analyze time
+series of individual variables without having to access the entire
+data volume. Thus, the raw data from major model integrations is
+usually postprocessed into more user-friendly configurations, such as
+single files containing long time-series of each output fields, and
+made available to the community.</p>
+<p>For CESM, please refer to the <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/filename_conventions_cesm.html">CESM2 Output Filename Conventions</a>
+for a description of output data filenames.</p>
 </div>
 <div class="section" id="restarting-a-run">
-<h2>6.5. Restarting a run<a class="headerlink" href="#restarting-a-run" title="Permalink to this headline">¶</a></h2>
-<p>Restart files are written by each active component (and some data components) at intervals dictated by the driver via the setting of the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variables, <code class="docutils literal"><span class="pre">$REST_OPTION</span></code> and <code class="docutils literal"><span class="pre">$REST_N</span></code>. Restart files allow the model to stop and then start again with bit-for-bit exact capability (i.e. the model output is exactly the same as if it had never been stopped). The driver coordinates the writing of restart files as well as the time evolution of the model. All components receive restart and stop information from the driver and write restarts or stop as specified by the driver.</p>
-<p>It is important to note that runs that are initialized as branch or hybrid runs, will require restart/initial files from previous model runs (as specified by the variables, <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and <code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>). These required files must be prestaged by the user to the case <code class="docutils literal"><span class="pre">$RUNDIR</span></code> (normally <code class="docutils literal"><span class="pre">$EXEROOT/run</span></code>) before the model run starts. This is normally done by just copying the contents of the relevant <code class="docutils literal"><span class="pre">$RUN_REFCASE/rest/$RUN_REFDATE.00000</span></code> directory.</p>
-<p>Whenever a component writes a restart file, it also writes a restart pointer file of the form, <code class="docutils literal"><span class="pre">rpointer.$component</span></code>. The restart pointer file contains the restart filename that was just written by the component. Upon a restart, each component reads its restart pointer file to determine the filename(s) to read in order to continue the model run. As examples, the following pointer files will be created for a component set using full active model components.</p>
-<p><code class="docutils literal"><span class="pre">`</span>
-<span class="pre">-</span> <span class="pre">rpointer.atm</span>
-<span class="pre">-</span> <span class="pre">rpointer.drv</span>
-<span class="pre">-</span> <span class="pre">rpointer.ice</span>
-<span class="pre">-</span> <span class="pre">rpointer.lnd</span>
-<span class="pre">-</span> <span class="pre">rpointer.rof</span>
-<span class="pre">-</span> <span class="pre">rpointer.cism</span>
-<span class="pre">-</span> <span class="pre">rpointer.ocn.ovf</span>
-<span class="pre">-</span> <span class="pre">rpointer.ocn.restart</span>
-<span class="pre">`</span></code></p>
-<p>If short-term archiving is turned on, then the model archives the component restart datasets and pointer files into <code class="docutils literal"><span class="pre">$DOUT_S_ROOT/rest/yyyy-mm-dd-sssss</span></code>, where yyyy-mm-dd-sssss is the model date at the time of the restart (see <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">below for more details</a>). If long-term archiving these restart then archived in <code class="docutils literal"><span class="pre">$DOUT_L_MSROOT/rest</span></code>. <code class="docutils literal"><span class="pre">DOUT_S_ROOT</span></code> and <code class="docutils literal"><span class="pre">DOUT_L_MSROOT</span></code> are set in <code class="docutils literal"><span class="pre">env_run.xml</span></code>, and can be changed at any time during the run.</p>
+<span id="id4"></span><h2>6.5. Restarting a run<a class="headerlink" href="#restarting-a-run" title="Permalink to this headline">¶</a></h2>
+<p>Restart files are written by each active component (and some data
+components) at intervals dictated by the driver via the setting of the
+<code class="docutils literal"><span class="pre">env_run.xml</span></code> variables, <code class="docutils literal"><span class="pre">$REST_OPTION</span></code> and <code class="docutils literal"><span class="pre">$REST_N</span></code>. Restart
+files allow the model to stop and then start again with bit-for-bit
+exact capability (i.e. the model output is exactly the same as if it
+had never been stopped). The driver coordinates the writing of restart
+files as well as the time evolution of the model. All components
+receive restart and stop information from the driver and write
+restarts or stop as specified by the driver.</p>
+<p>It is important to note that runs that are initialized as branch or
+hybrid runs, will require restart/initial files from previous model
+runs (as specified by the variables, <code class="docutils literal"><span class="pre">$RUN_REFCASE</span></code> and
+<code class="docutils literal"><span class="pre">$RUN_REFDATE</span></code>). These required files must be prestaged by the user
+to the case <code class="docutils literal"><span class="pre">$RUNDIR</span></code> (normally <code class="docutils literal"><span class="pre">$EXEROOT/run</span></code>) before the model
+run starts. This is normally done by just copying the contents of the
+relevant <code class="docutils literal"><span class="pre">$RUN_REFCASE/rest/$RUN_REFDATE.00000</span></code> directory.</p>
+<p>Whenever a component writes a restart file, it also writes a restart
+pointer file of the form, <code class="docutils literal"><span class="pre">rpointer.$component</span></code>. The restart pointer
+file contains the restart filename that was just written by the
+component. Upon a restart, each component reads its restart pointer
+file to determine the filename(s) to read in order to continue the
+model run. As examples, the following pointer files will be created
+for a component set using full active model components.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">atm</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">drv</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">ice</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">lnd</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">rof</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">cism</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">ocn</span><span class="o">.</span><span class="n">ovf</span>
+<span class="o">-</span> <span class="n">rpointer</span><span class="o">.</span><span class="n">ocn</span><span class="o">.</span><span class="n">restart</span>
+</pre></div>
+</div>
+<p>If short-term archiving is turned on, then the model archives the
+component restart datasets and pointer files into
+<code class="docutils literal"><span class="pre">$DOUT_S_ROOT/rest/yyyy-mm-dd-sssss</span></code>, where yyyy-mm-dd-sssss is the
+model date at the time of the restart (see <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">below for more details</a>).</p>
 <div class="section" id="backing-up-to-a-previous-restart">
 <h3>6.5.1. Backing up to a previous restart<a class="headerlink" href="#backing-up-to-a-previous-restart" title="Permalink to this headline">¶</a></h3>
-<p>If a run encounters problems and crashes, you will normally have to back up to a previous restart. Assuming that short-term archiving is enabled, you will need to find the latest <code class="docutils literal"><span class="pre">$DOUT_S_ROOT/rest/yyyy-mm-dd-ssss/</span></code> directory that was created and copy the contents of that directory into your run directory (<code class="docutils literal"><span class="pre">$RUNDIR</span></code>). You can then continue the run and these restarts will be used. It is important to make sure the new rpointer.* files overwrite the rpointer.* files that were in <code class="docutils literal"><span class="pre">$RUNDIR</span></code>, or the job may not restart in the correct place.</p>
-<p>Occasionally, when a run has problems restarting, it is because the rpointer files are out of sync with the restart files. The rpointer files are text files and can easily be edited to match the correct dates of the restart and history files. All the restart files should have the same date.</p>
+<p>If a run encounters problems and crashes, you will normally have to
+back up to a previous restart. Assuming that short-term archiving is
+enabled, you will need to find the latest
+<code class="docutils literal"><span class="pre">$DOUT_S_ROOT/rest/yyyy-mm-dd-ssss/</span></code> directory that was created and
+copy the contents of that directory into your run directory
+(<code class="docutils literal"><span class="pre">$RUNDIR</span></code>). You can then continue the run and these restarts will
+be used. It is important to make sure the new rpointer.* files
+overwrite the rpointer.* files that were in <code class="docutils literal"><span class="pre">$RUNDIR</span></code>, or the job
+may not restart in the correct place.</p>
+<p>Occasionally, when a run has problems restarting, it is because the
+rpointer files are out of sync with the restart files. The rpointer
+files are text files and can easily be edited to match the correct
+dates of the restart and history files. All the restart files should
+have the same date.</p>
 </div>
 </div>
 <div class="section" id="archiving-model-output-data">
 <h2>6.6. Archiving model output data<a class="headerlink" href="#archiving-model-output-data" title="Permalink to this headline">¶</a></h2>
-<p>All component log files are copied to the directory specified by the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variable <code class="docutils literal"><span class="pre">$LOGDIR</span></code> which by default is set to <code class="docutils literal"><span class="pre">$CASEROOT/logs</span></code>. This location is where log files are copied when the job completes successfully. If the job aborts, the log files will NOT be copied out of the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> directory.</p>
-<p>Once a model run has completed successfully, the output data flow will depend on whether or not short-term archiving is enabled (as set by the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variable, <code class="docutils literal"><span class="pre">$DOUT_S</span></code>). By default, short-term archiving will be done.</p>
+<p>All component log files are copied to the directory specified by the
+<code class="docutils literal"><span class="pre">env_run.xml</span></code> variable <code class="docutils literal"><span class="pre">$LOGDIR</span></code> which by default is set to
+<code class="docutils literal"><span class="pre">$CASEROOT/logs</span></code>. This location is where log files are copied when
+the job completes successfully. If the job aborts, the log files will
+NOT be copied out of the <code class="docutils literal"><span class="pre">$RUNDIR</span></code> directory.</p>
+<p>Once a model run has completed successfully, the output data flow will
+depend on whether or not short-term archiving is enabled (as set by
+the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variable, <code class="docutils literal"><span class="pre">$DOUT_S</span></code>). By default, short-term
+archiving will be done (<code class="docutils literal"><span class="pre">DOUT_S=TRUE</span></code>).</p>
 <div class="section" id="no-archiving">
 <h3>6.6.1. No archiving<a class="headerlink" href="#no-archiving" title="Permalink to this headline">¶</a></h3>
-<p>If no short-term archiving is performed, then all model output data will remain in the run directory, as specified by the <code class="docutils literal"><span class="pre">env_run.xml</span></code> variable, <code class="docutils literal"><span class="pre">$RUNDIR</span></code>. Furthermore, if short-term archiving is disabled, then long-term archiving will not be allowed.</p>
+<p>If no short-term archiving is performed, then all model output data
+will remain in the run directory, as specified by the <code class="docutils literal"><span class="pre">env_run.xml</span></code>
+variable, <code class="docutils literal"><span class="pre">$RUNDIR</span></code>.</p>
 </div>
 <div class="section" id="short-term-archiving">
 <h3>6.6.2. Short-term archiving<a class="headerlink" href="#short-term-archiving" title="Permalink to this headline">¶</a></h3>
-<p>If short-term archiving is enabled, the component output files will be moved to the short term archiving area on local disk, as specified by <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code>. The directory <code class="docutils literal"><span class="pre">DOUT_S_ROOT</span></code> is normally set to <code class="docutils literal"><span class="pre">$EXEROOT/../archive/$CASE.</span></code> and will contain the following directory structure:</p>
+<p>If short-term archiving is enabled, the component output files will be
+moved to the short term archiving area on local disk, as specified by
+<code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code>. The directory <code class="docutils literal"><span class="pre">DOUT_S_ROOT</span></code> is normally set to
+<code class="docutils literal"><span class="pre">$EXEROOT/../archive/$CASE.</span></code> and will contain the following
+directory structure:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rest</span><span class="o">/</span><span class="n">yyyy</span><span class="o">-</span><span class="n">mm</span><span class="o">-</span><span class="n">dd</span><span class="o">-</span><span class="n">sssss</span><span class="o">/</span>
 <span class="n">logs</span><span class="o">/</span>
 <span class="n">atm</span><span class="o">/</span><span class="n">hist</span><span class="o">/</span>
@@ -289,14 +507,24 @@ the run will automatically submit the <strong>$CASE.l_archive</strong> to the qu
 <span class="o">....</span>
 </pre></div>
 </div>
-<p>logs/ contains component log files created during the run. In addition to <code class="docutils literal"><span class="pre">$LOGDIR</span></code>, log files are also copied to the short-term archiving directory and therefore are available for long-term archiving.</p>
-<p>rest/ contains a subset of directories that each contain a <em>consistent</em> set of restart files, initial files and rpointer files. Each sub-directory has a unique name corresponding to the model year, month, day and seconds into the day where the files were created (e.g. 1852-01-01-00000/). The contents of any restart directory can be used to <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">create a branch run or a hybrid run</a> or back up to a previous restart date.</p>
+<p>logs/ contains component log files created during the run. In addition
+to <code class="docutils literal"><span class="pre">$LOGDIR</span></code>, log files are also copied to the short-term archiving
+directory and therefore are available for long-term archiving.</p>
+<p>rest/ contains a subset of directories that each contain a
+<em>consistent</em> set of restart files, initial files and rpointer
+files. Each sub-directory has a unique name corresponding to the model
+year, month, day and seconds into the day where the files were created
+(e.g. 1852-01-01-00000/). The contents of any restart directory can be
+used to create a branch run or a hybrid run or back up to a previous
+restart date.</p>
 </div>
 <div class="section" id="long-term-archiving">
 <h3>6.6.3. Long-term archiving<a class="headerlink" href="#long-term-archiving" title="Permalink to this headline">¶</a></h3>
-<p>For long production runs that generate many giga-bytes of data, you will normally want to move the output data from local disk to a long-term archival location. Long-term archiving can be activated by setting <code class="docutils literal"><span class="pre">$DOUT_L_MS</span></code> to TRUE in <code class="docutils literal"><span class="pre">env_run.xml</span></code>. By default, the value of this variable is FALSE, and long-term archiving is disabled. If the value is set to TRUE, then the following additional variables are: <code class="docutils literal"><span class="pre">$DOUT_L_MSROOT,</span> <span class="pre">$DOUT_S_ROOT</span> <span class="pre">DOUT_S</span></code> (see
-<a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">variables for output data management</a>).</p>
-<p>As was mentioned above, if long-term archiving is enabled, files will be moved out of <code class="docutils literal"><span class="pre">$DOUT_S_ROOT</span></code> to <code class="docutils literal"><span class="pre">$DOUT_L_ROOT</span></code> by <code class="docutils literal"><span class="pre">$CASE.l_archive</span></code>, which is run as a separate batch job after the successful completion of a model run.</p>
+<p>Users may choose to user their institution&#8217;s preferred method for long-term
+archiving of model output. Previous releases of CESM provided an external
+long-term archiver tool which supported mass tape storage and HPSS systems.
+However, with the industry migration away from tape archives, it is no longer
+feasible for CIME to support all the possible archival schemes available.</p>
 </div>
 </div>
 </div>
@@ -319,13 +547,13 @@ the run will automatically submit the <strong>$CASE.l_archive</strong> to the qu
         <li class="right" >
           <a href="building-a-case.html" title="5. Building a Case"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">on  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+        &copy; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.3.
     </div>
   </body>
 </html>
