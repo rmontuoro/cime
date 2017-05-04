@@ -237,10 +237,10 @@ Hardware processors 65-112 would have been allocated but completely idle.</p>
 </div>
 <div class="section" id="customizing-driver-namelists">
 <span id="changing-driver-namelists"></span><h2>7.3. Customizing driver namelists<a class="headerlink" href="#customizing-driver-namelists" title="Permalink to this headline">¶</a></h2>
-<p>Driver namelist variables belong in two groups - those that are set directly from <code class="docutils literal"><span class="pre">$CASEROOT`</span> <span class="pre">xml</span> <span class="pre">variables</span> <span class="pre">and</span> <span class="pre">those</span> <span class="pre">that</span> <span class="pre">are</span> <span class="pre">set</span> <span class="pre">by</span> <span class="pre">the</span> <span class="pre">driver</span> <span class="pre">utility</span> <span class="pre">``$CIMEROOT/driver_cpl/cime_config/buildnml</span></code>.
-All driver namelist variables are defined in <code class="docutils literal"><span class="pre">$CIMEROOT/driver_cpl/cime_config/namelist_definition_drv.xml</span></code>.
+<p>Driver namelist variables belong in two groups - those that are set directly from <code class="docutils literal"><span class="pre">$CASEROOT`</span> <span class="pre">xml</span> <span class="pre">variables</span> <span class="pre">and</span> <span class="pre">those</span> <span class="pre">that</span> <span class="pre">are</span> <span class="pre">set</span> <span class="pre">by</span> <span class="pre">the</span> <span class="pre">driver</span> <span class="pre">utility</span> <span class="pre">``$CIMEROOT/src/drivers/mct/cime_config/buildnml</span></code>.
+All driver namelist variables are defined in <code class="docutils literal"><span class="pre">$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</span></code>.
 Those variables that can only be changed by modifying xml variables appear with the <code class="docutils literal"><span class="pre">entry</span></code> attribute <code class="docutils literal"><span class="pre">modify_via_xml=&quot;xml_variable_name&quot;</span></code>.
-All other variables that appear <code class="docutils literal"><span class="pre">$CIMEROOT/driver_cpl/cime_config/namelist_definition_drv.xml</span></code> can be modified by adding a key-word value pair at the end of <code class="docutils literal"><span class="pre">user_nl_cpl</span></code>.
+All other variables that appear <code class="docutils literal"><span class="pre">$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</span></code> can be modified by adding a key-word value pair at the end of <code class="docutils literal"><span class="pre">user_nl_cpl</span></code>.
 For example, to change the driver namelist value of <code class="docutils literal"><span class="pre">eps_frac</span></code> to <code class="docutils literal"><span class="pre">1.0e-15</span></code>, you should add the following line to the end of the <code class="docutils literal"><span class="pre">user_nl_cpl</span></code></p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">eps_frac</span> <span class="o">=</span> <span class="mf">1.0e-15</span>
 </pre></div>
@@ -416,7 +416,7 @@ CPP variables in pop2.buildexe.csh
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.5.
     </div>
   </body>
 </html>
