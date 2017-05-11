@@ -390,7 +390,7 @@ class SystemTestsCommon(object):
             success, comments = generate_baseline(self._case)
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            self._test_status.set_status("{}".format(GENERATE_PHASE, status))
+            self._test_status.set_status("{}".format(GENERATE_PHASE), status)
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
 
             # copy latest cpl log to baseline
