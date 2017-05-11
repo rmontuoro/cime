@@ -456,7 +456,7 @@ class Case(object):
             #Do not error out for user_compset
             logger.warn("Could not find a compset match for either alias or longname in {}", compset_name)
             self._compsetname = compset_name
-            logger.info("Pes     specification file is %s" %(pesfile))
+            logger.info("Pes     specification file is {}".format(pesfile))
             self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
@@ -563,7 +563,7 @@ class Case(object):
         # self._pesfile may already be env_mach_pes.xml if so we can just return
         gfile = GenericXML(infile=self._pesfile)
         ftype = gfile.get_id()
-        expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize %s as a valid CIME pes file %s"%(self._pesfile, ftype))
+        expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
             self.update_env(new_mach_pes_obj, "mach_pes")
@@ -690,7 +690,7 @@ class Case(object):
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
-            logger.debug("Set grid %s %s"%(key,value))
+            logger.debug("Set grid {} {}".format(key,value))
             self.set_lookup_value(key,value)
 
         #--------------------------------------------
@@ -709,9 +709,9 @@ class Case(object):
         machine_name = machobj.get_machine_name()
         self.set_value("MACH", machine_name)
         if probed_machine != machine_name and probed_machine is not None:
-            logger.warning("WARNING: User-selected machine '%s' does not match probed machine '%s'" % (machine_name, probed_machine))
+            logger.warning("WARNING: User-selected machine '{}' does not match probed machine '{}'".format(machine_name, probed_machine))
         else:
-            logger.info("Machine is %s" % machine_name)
+            logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
         nodenames =  [x for x in nodenames if
@@ -722,14 +722,14 @@ class Case(object):
             value = machobj.get_value(nodename, resolved=False)
             type_str = self.get_type_info(nodename)
             if type_str is not None:
-                logger.debug("machine nodname %s value %s"%(nodename, value))
+                logger.debug("machine nodname {} value {}".format(nodename, value))
                 self.set_value(nodename, convert_to_type(value, type_str, nodename))
 
         if compiler is None:
             compiler = machobj.get_default_compiler()
         else:
             expect(machobj.is_valid_compiler(compiler),
-                   "compiler %s is not supported on machine %s" %(compiler, machine_name))
+                   "compiler {} is not supported on machine {}".format(compiler, machine_name))
 
         self.set_value("COMPILER",compiler)
 
@@ -737,7 +737,7 @@ class Case(object):
             mpilib = machobj.get_default_MPIlib({"compiler":compiler})
         else:
             expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
-                   "MPIlib %s is not supported on machine %s" %(mpilib, machine_name))
+                   "MPIlib {} is not supported on machine {}".format(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
 
         machdir = machobj.get_machines_dir()
